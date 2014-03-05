@@ -1,0 +1,23 @@
+This directory contains the Python interface to libd3q15, a C LB
+implementation.
+
+The library is wrapped using SWIG (http://www.swig.org/) interface
+files (*.i)
+
+The setup.py file is Python's equivalent of a Makefile. Run
+
+    $ python setup.py build
+
+to build the extension module and
+
+   $ python setup.py install
+
+to install it! See http://docs.python.org/install/index.html for the
+full details. Further documentation is in the source and accessible
+with a Python interpreter's help() function. E.g.
+
+     >>> import d3q15
+     >>> help(d3q15.Lattice)
+
+Contact me at rupert@nash.me.uk for further information.
+

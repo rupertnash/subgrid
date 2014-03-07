@@ -39,7 +39,7 @@ class Controller(object):
         self.lastCPTime = time.time()
         
         return
-
+    
     def log(self, msg):
         """Write and flush the message to the logfile, prepending the date
         & time"""
@@ -228,7 +228,15 @@ class BaseController(Controller):
                             cpInterval)
         return
 
-    
+    def open(self, name, mode='r', buffering=1):
+        """Open a file in the output directory. If name is a relative path, it is
+        assumed to be relative to the base directory for this run. Other
+        arguments options as for __builtins__.open.
+        """
+        if not os.path.isabs(name):
+            name = os.path.join(self.baseName, name)
+        return open(name, mode, buffering)
+
     def fixpaths(self, base):
         """Fix up the paths; it's a private method so don't be calling
         this from outside the class.

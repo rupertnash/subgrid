@@ -65,7 +65,7 @@
 }
 
 %typemap(in,numinputs=0,noblock=1) double argoutvector[ANY] (PyObject *outArrObj), double &OUTPUT (PyObject *outArrObj) {
-  int dims[1];
+  npy_intp dims[1];
   dims[0] = 3;
   
   outArrObj = PyArray_SimpleNew(1, dims, NPY_DOUBLE);

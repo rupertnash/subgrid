@@ -360,7 +360,7 @@ EXC_CHECK(force_set)
     
     resultobj = PyArray_SimpleNewFromData(n_dims,
 					  dims,
-					  PyArray_DOUBLE,
+					  NPY_DOUBLE,
 					  (void *)$self->f_ptr);
     
     return resultobj;
@@ -373,41 +373,42 @@ EXC_CHECK(force_set)
     
     /* check it's a numpy array */  
     if (!PyArray_Check(obj)) {
-      PyErr_Format(PyExc_ValueError, "must set to a Numeric array");
+      PyErr_Format(PyExc_ValueError, "must set to a numpy array");
       return;
     }
     
     array = (PyArrayObject *)obj;
     /* check it's an array of doubles */
-    if (array->descr->type_num != PyArray_DOUBLE) {
+    if (PyArray_DTYPE(array)->type_num != NPY_DOUBLE) {
       PyErr_Format(PyExc_ValueError, "array must be of type Float (a C double)");
       return;
     }
     
     /* check it has the right no. dimensions */
-    if (array->nd != DQ_d+1) {
-      PyErr_Format(PyExc_ValueError, "array must be %d-dimensional (is %d)", DQ_d+1, array->nd);
+    if (PyArray_NDIM(array) != DQ_d+1) {
+      PyErr_Format(PyExc_ValueError, "array must be %d-dimensional (is %d)", DQ_d+1, PyArray_NDIM(array));
       return;
     }
     
     /* check the dimensions match */
-    if (array->dimensions[0] != $self->_x_ar_size || 
-        array->dimensions[1] != $self->_y_ar_size ||
-        array->dimensions[2] != $self->_z_ar_size ||
-        array->dimensions[3] != DQ_q) {
+    npy_intp *dims = PyArray_DIMS(array);
+    if (dims[0] != $self->_x_ar_size || 
+        dims[1] != $self->_y_ar_size ||
+        dims[2] != $self->_z_ar_size ||
+        dims[3] != DQ_q) {
       PyErr_Format(PyExc_ValueError,
 		   "array must sized %d x %d x %d x %d (is %" NPY_INTP_FMT 
 		   " x %" NPY_INTP_FMT
 		   " x %" NPY_INTP_FMT
 		   " x %" NPY_INTP_FMT ")",
 		   $self->_x_ar_size,$self->_y_ar_size,$self->_z_ar_size,DQ_q,
-		   array->dimensions[0], array->dimensions[1],
-		   array->dimensions[2], array->dimensions[3]);
+		   dims[0], dims[1],
+		   dims[2], dims[3]);
       return;
     }
     
     /* copy */
-    data = (double *)array->data;
+    data = (double *)PyArray_DATA(array);
     for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2)*DQ_q; i++)
       $self->f_ptr[i] = data[i];
     
@@ -428,7 +429,7 @@ EXC_CHECK(force_set)
     
     resultobj = PyArray_SimpleNewFromData(n_dims,
 					  dims,
-					  PyArray_DOUBLE,
+					  NPY_DOUBLE,
 					  (void *)$self->rho_ptr);
     
     return resultobj;
@@ -441,28 +442,29 @@ EXC_CHECK(force_set)
     
     /* check it's a numpy array */  
     if (!PyArray_Check(obj)) {
-      PyErr_Format(PyExc_ValueError, "must set to a Numeric array");
+      PyErr_Format(PyExc_ValueError, "must set to a numpy array");
       return;
     }
     
     array = (PyArrayObject *)obj;
     /* check it's an array of doubles */
-    if (array->descr->type_num != PyArray_DOUBLE) {
+    if (PyArray_DTYPE(array)->type_num != NPY_DOUBLE) {
       PyErr_Format(PyExc_ValueError, "array must be of type Float (a C double)");
       return;
     }
     
     /* check it has the right no. dimensions */
-    if (array->nd != DQ_d) {
+    if (PyArray_NDIM(array) != DQ_d) {
       PyErr_Format(PyExc_ValueError, "array must be %d-dimensional (is %d)",
-		   DQ_d, array->nd);
+		   DQ_d, PyArray_NDIM(array));
       return;
     }
     
     /* check the dimensions match */
-    if (array->dimensions[0] != $self->_x_ar_size || 
-        array->dimensions[1] != $self->_y_ar_size ||
-        array->dimensions[2] != $self->_z_ar_size) {
+    npy_intp *dims = PyArray_DIMS(array);
+    if (dims[0] != $self->_x_ar_size || 
+        dims[1] != $self->_y_ar_size ||
+        dims[2] != $self->_z_ar_size) {
 
 
       PyErr_Format(PyExc_ValueError, "array must sized %d x %d x %d"
@@ -470,13 +472,13 @@ EXC_CHECK(force_set)
 		   " x %" NPY_INTP_FMT 
 		   " x %" NPY_INTP_FMT ")",
 		   $self->_x_ar_size, $self->_y_ar_size, $self->_z_ar_size,
-  		   array->dimensions[0], array->dimensions[1],
-		   array->dimensions[2]);
+  		   dims[0], dims[1],
+		   dims[2]);
       return;
     }
     
     /* copy */
-    data = (double *)array->data;
+    data = (double *)PyArray_DATA(array);
     for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2); i++)
       $self->rho_ptr[i] = data[i];
     
@@ -498,7 +500,7 @@ EXC_CHECK(force_set)
 
     resultobj = PyArray_SimpleNewFromData(n_dims,
 					  dims,
-					  PyArray_DOUBLE,
+					  NPY_DOUBLE,
 					  (void *)$self->u_ptr);
     
     return resultobj;
@@ -511,42 +513,43 @@ EXC_CHECK(force_set)
     
     /* check it's a numpy array */  
     if (!PyArray_Check(obj)) {
-      PyErr_Format(PyExc_ValueError, "must set to a Numeric array");
+      PyErr_Format(PyExc_ValueError, "must set to a numpy array");
       return;
     }
     
     array = (PyArrayObject *)obj;
     /* check it's an array of doubles */
-    if (array->descr->type_num != PyArray_DOUBLE) {
+    if (PyArray_DTYPE(array)->type_num != NPY_DOUBLE) {
       PyErr_Format(PyExc_ValueError, "array must be of type Float (a C double)");
       return;
     }
     
     /* check it has the right no. dimensions */
-    if (array->nd != DQ_d+1) {
+    if (PyArray_NDIM(array) != DQ_d+1) {
       PyErr_Format(PyExc_ValueError, "array must be %d-dimensional (is %d)",
-		   DQ_d+1, array->nd);
+		   DQ_d+1, PyArray_NDIM(array));
       return;
     }
     
     /* check the dimensions match */
-    if (array->dimensions[0] != $self->_x_ar_size || 
-	array->dimensions[1] != $self->_y_ar_size ||
-	array->dimensions[2] != $self->_z_ar_size ||
-	array->dimensions[3] != DQ_d) {
+    npy_intp *dims = PyArray_DIMS(array);
+    if (dims[0] != $self->_x_ar_size || 
+	dims[1] != $self->_y_ar_size ||
+	dims[2] != $self->_z_ar_size ||
+	dims[3] != DQ_d) {
       PyErr_Format(PyExc_ValueError,
 		   "array must sized %d x %d x %d x %d (is %" NPY_INTP_FMT 
 		   " x %" NPY_INTP_FMT
 		   " x %" NPY_INTP_FMT
 		   " x %" NPY_INTP_FMT ")",
 		   $self->_x_ar_size, $self->_y_ar_size, $self->_z_ar_size, DQ_d,
-		   array->dimensions[0], array->dimensions[1],
-		   array->dimensions[2], array->dimensions[3]);
+		   dims[0], dims[1],
+		   dims[2], dims[3]);
       return;
     }
     
     /* copy */
-    data = (double *)array->data;
+    data = (double *)PyArray_DATA(array);
     for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2)*DQ_d; i++)
       $self->u_ptr[i] = data[i];
     
@@ -568,7 +571,7 @@ EXC_CHECK(force_set)
     
     resultobj = PyArray_SimpleNewFromData(n_dims,
 					  dims,
-					  PyArray_DOUBLE,
+					  NPY_DOUBLE,
 					  (void *)$self->force_ptr);
     
     return resultobj;
@@ -581,42 +584,43 @@ EXC_CHECK(force_set)
     
     /* check it's a numpy array */  
     if (!PyArray_Check(obj)) {
-      PyErr_Format(PyExc_ValueError, "must set to a Numeric array");
+      PyErr_Format(PyExc_ValueError, "must set to a numpy array");
       return;
     }
     
     array = (PyArrayObject *)obj;
     /* check it's an array of doubles */
-    if (array->descr->type_num != PyArray_DOUBLE) {
+    if (PyArray_DTYPE(array)->type_num != NPY_DOUBLE) {
       PyErr_Format(PyExc_ValueError, "array must be of type Float (a C double)");
       return;
   }
     
     /* check it has the right no. dimensions */
-    if (array->nd != DQ_d+1) {
+    if (PyArray_NDIM(array) != DQ_d+1) {
       PyErr_Format(PyExc_ValueError, "array must be %d-dimensional (is %d)",
-		   DQ_d+1, array->nd);
+		   DQ_d+1, PyArray_NDIM(array));
       return;
     }
     
     /* check the dimensions match */
-    if (array->dimensions[0] != $self->_x_ar_size || 
-	array->dimensions[1] != $self->_y_ar_size ||
-	array->dimensions[2] != $self->_z_ar_size ||
-	array->dimensions[3] != DQ_d) {
+    npy_intp *dims = PyArray_DIMS(array);
+    if (dims[0] != $self->_x_ar_size || 
+	dims[1] != $self->_y_ar_size ||
+	dims[2] != $self->_z_ar_size ||
+	dims[3] != DQ_d) {
       PyErr_Format(PyExc_ValueError,
 		   "array must sized %d x %d x %d x %d (is %" NPY_INTP_FMT 
 		   " x %" NPY_INTP_FMT
 		   " x %" NPY_INTP_FMT
 		   " x %" NPY_INTP_FMT ")",
 		   $self->_x_ar_size,$self->_y_ar_size,$self->_z_ar_size,DQ_d,
-		   array->dimensions[0], array->dimensions[1],
-		   array->dimensions[2], array->dimensions[3]);
+		   dims[0], dims[1],
+		   dims[2], dims[3]);
       return;
     }
     
     /* copy */
-    data = (double *)array->data;
+    data = (double *)PyArray_DATA(array);
     for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2)*DQ_d; i++)
       $self->force_ptr[i] = data[i];
     
@@ -690,10 +694,11 @@ PyObject *Lattice_totalMomentum_get(Lattice *self) {
   int i;
   npy_intp dims = DQ_d;
   double mass, mom[DQ_d], *ans_data;
-  PyObject *ans = PyArray_SimpleNew(1, &dims, PyArray_DOUBLE);
+  PyObject *ans = PyArray_SimpleNew(1, &dims, NPY_DOUBLE);
+  PyArrayObject* ansArray = (PyArrayObject *)ans;
   
   total_mass_and_momentum(self, &mass, mom);
-  ans_data = (double *)((PyArrayObject *)ans)->data;
+  ans_data = (double *)PyArray_DATA(ansArray);
   for (i=0; i<DQ_d; i++)
     ans_data[i] = mom[i];
   

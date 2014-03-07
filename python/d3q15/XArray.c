@@ -26,9 +26,9 @@ int XArray_hasKey(PyObject *self, char k) {
   
   XArray_updateCache(self);
   
-  nRows = table->dimensions[0];
-  nCols = table->dimensions[1];
-  array = table->data;
+  nRows = PyArray_DIM(table, 0);
+  nCols = PyArray_DIM(table, 1);
+  array = PyArray_DATA(table);
   
   for (i=0; i<nRows; i++) {
     if (array[i*nCols + 0] == k) {
@@ -45,9 +45,9 @@ char XArray_getStart(PyObject *self, char k) {
 
   XArray_updateCache(self);
   
-  nRows = table->dimensions[0];
-  nCols = table->dimensions[1];
-  array = table->data;
+  nRows = PyArray_DIM(table, 0);
+  nCols = PyArray_DIM(table, 1);
+  array = PyArray_DATA(table);
   
   for (i=0; i<nRows; i++) {
     if (array[i*nCols + 0] == k) {
@@ -65,9 +65,9 @@ char XArray_getLen(PyObject *self, char k) {
   
   XArray_updateCache(self);
       
-  nRows = table->dimensions[0];
-  nCols = table->dimensions[1];
-  array = table->data;
+  nRows = PyArray_DIM(table, 0);
+  nCols = PyArray_DIM(table, 1);
+  array = PyArray_DATA(table);
   
   for (i=0; i<nRows; i++) {
     if (array[i*nCols + 0] == k) {
@@ -85,8 +85,8 @@ double XArray_getValue(PyObject *self, int i, char key, int pos) {
   
   XArray_updateCache(self);
   
-  nCols = data->dimensions[1];
-  array = data->data;
+  nCols = PyArray_DIM(table, 1);
+  array = PyArray_DATA(table);
   
   return array[nCols*i + XArray_getStart(self, key) + pos];
 }
@@ -97,8 +97,8 @@ void XArray_setValue(PyObject *self, int i, char key, int pos, double val) {
   
   XArray_updateCache(self);
   
-  nCols = data->dimensions[1];
-  array = data->data;
+  nCols = PyArray_DIM(table, 1);
+  array = PyArray_DATA(table);
   
   array[nCols*i + XArray_getStart(self, key) + pos] = val;
 }

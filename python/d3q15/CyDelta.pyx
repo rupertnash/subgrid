@@ -10,7 +10,7 @@ cdef extern from "math.h":
     double fabs(double)
     double sqrt(double)
 
-from c_numpy cimport npy_intp, NPY_DOUBLE, import_array
+from numpy cimport npy_intp, NPY_DOUBLE, import_array
 import_array()
 
     

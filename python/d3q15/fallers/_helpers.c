@@ -42,11 +42,11 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
   fallerData = PyObject_GetAttrString(self, "data");
   /* noting we have a new ref *
    * and get the number of fallers */
-  numFallers = ( (PyArrayObject *)fallerData )->dimensions[0];
+  numFallers = PyArray_DIM((PyArrayObject *)fallerData, 0);
   /* and number of cols in array */
-  numCols = ( (PyArrayObject *)fallerData )->dimensions[1];
+  numCols = PyArray_DIM((PyArrayObject *)fallerData, 1);
 
-  fallers = (double *)( (PyArrayObject *)fallerData )->data;
+  fallers = (double *)PyArray_DATA( (PyArrayObject *)fallerData );
   rStart = XArray_getStart(self, 'r');
   vStart = XArray_getStart(self, 'v');
   fStart = XArray_getStart(self, 'F');
@@ -123,11 +123,11 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
   fallerData = PyObject_GetAttrString(self, "data");
   /* noting we have a new ref *
    * and get the number of fallers */
-  numFallers = ( (PyArrayObject *)fallerData )->dimensions[0];
+  numFallers = PyArray_DIM((PyArrayObject *)fallerData, 0);
   /* and number of cols in array */
-  numCols = ( (PyArrayObject *)fallerData )->dimensions[1];
+  numCols = PyArray_DIM((PyArrayObject *)fallerData, 1);
   
-  fallers = (double *)( (PyArrayObject *)fallerData )->data;
+  fallers = (double *)PyArray_DATA((PyArrayObject *)fallerData);
   rStart = XArray_getStart(self, 'r');
   vStart = XArray_getStart(self, 'v');
   fStart = XArray_getStart(self, 'F');
@@ -202,7 +202,7 @@ void PDFallerArray_addPotentialDipoles(PyObject *self, Lattice *lat) {
   fallerData = PyObject_GetAttrString(self, "data");
 
   /* get pointers to the data sections */
-  fallers = (double *)( (PyArrayObject *)fallerData )->data;
+  fallers = (double *)PyArray_DATA((PyArrayObject *)fallerData);
 
   /* get the Lattice size */
   size[0] = nx = lat->nx;
@@ -210,9 +210,9 @@ void PDFallerArray_addPotentialDipoles(PyObject *self, Lattice *lat) {
   size[2] = nz = lat->nz;
   
   /* and number of fallers */
-  numFallers = ( (PyArrayObject *)fallerData )->dimensions[0];
+  numFallers = PyArray_DIM((PyArrayObject *)fallerData, 0);
   /* and number of cols in array */
-  numCols = ( (PyArrayObject *)fallerData )->dimensions[1];
+  numCols = PyArray_DIM((PyArrayObject *)fallerData, 1);
   
   rStart = XArray_getStart(self, 'r');
   fStart = XArray_getStart(self, 'F');

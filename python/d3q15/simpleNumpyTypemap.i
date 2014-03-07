@@ -37,20 +37,21 @@
       PyArrayObject *arrInput = (PyArrayObject *)input;
       int nelem = 1;
       /* check array of doubles */
-      if (arrInput->descr->type_num != PyArray_DOUBLE) {
+      if (PyArray_DTYPE(arrInput)->type_num != NPY_DOUBLE) {
 	PyErr_SetString(PyExc_TypeError, "Expecting an array of doubles");
 	return NULL;
       }
       
-      for (i=0; i<arrInput->nd; i++) {
-	nelem *= arrInput->dimensions[i];
+      npy_intp* dims = PyArray_DIMS(arrInput);
+      for (i=0; i<PyArray_NDIM(arrInput); i++) {
+	nelem *= dims[i];
       }
       if (nelem!= size) {
 	PyErr_Format(PyExc_ValueError,
 		     "Expecting a sequence with %d elements", size);
 	return NULL;
       }
-      return (double *)arrInput->data;
+      return (double *)PyArray_DATA(arrInput);
     }
   }
 }
@@ -67,11 +68,11 @@
   int dims[1];
   dims[0] = 3;
   
-  outArrObj = PyArray_SimpleNew(1, dims, PyArray_DOUBLE);
+  outArrObj = PyArray_SimpleNew(1, dims, NPY_DOUBLE);
   
   if (outArrObj == NULL)
     return NULL;
-  $1 = (double *)((PyArrayObject *)outArrObj)->data;
+  $1 = (double *)(PyArray_DATA((PyArrayObject *)outArrObj));
 }
 
 %typemap(argout,noblock=1) double argoutvector[ANY], double &argoutvector {

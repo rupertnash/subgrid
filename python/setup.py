@@ -3,33 +3,25 @@ import sys
 import os.path
 from distutils.core import setup, Extension
 import distutils.sysconfig
+from Cython.Build import cythonize
 import numpy
 
 numpyIncludeDir = numpy.get_include()
 
-#compile_args = []
-compile_args = ['-m32']
-#link_args = []
-link_args = ['-m32']
+compile_args = []
+link_args = []
 if os.path.exists('debug'):
     compile_args += ['-O0', '-U NDEBUG']
     
 libSrcDir = '../libd3q15/'
 
-cydelta_c = os.path.join('d3q15', 'CyDelta.c')
-if not os.path.exists(cydelta_c):
-    # try to generate it with Cython
-    np_base = os.path.split(numpy.__file__)[0]
-    cy_np_dir = os.path.join(np_base, 'doc', 'cython')
-    cydelta_pyx = os.path.join('d3q15', 'CyDelta.pyx')
-    
-    cmd = 'cython -I%s -o %s %s' % (cy_np_dir,
-                                    cydelta_c,
-                                    cydelta_pyx)
-    if os.system(cmd):
-        raise EnvironmentError("Problem generating CyDelta.c with command: %s" % cmd)
-    pass
+cyDeltaExt = Extension('d3q15.CyDelta', ['d3q15/CyDelta.pyx'],
+                       # define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
+                       include_dirs=[numpyIncludeDir],
+                       extra_compile_args=compile_args,
+                       extra_link_args=link_args)
 
+cyDeltaExt = cythonize([cyDeltaExt])[0]
 
 ext_modules = [Extension('d3q15._d3q15', ['d3q15/d3q15.i',
                                           libSrcDir+'d3q15.c',
@@ -50,11 +42,8 @@ ext_modules = [Extension('d3q15._d3q15', ['d3q15/d3q15.i',
                          include_dirs=[numpyIncludeDir,],
                          extra_compile_args=compile_args,
                          extra_link_args=link_args),
-               
-               Extension('d3q15.CyDelta', ['d3q15/CyDelta.c'],
-                         include_dirs=[numpyIncludeDir],
-                         extra_compile_args=compile_args,
-                         extra_link_args=link_args),
+                         
+               cyDeltaExt,
                
                Extension('d3q15._utils', ['d3q15/utils.i',
                                           'd3q15/utils.c',
@@ -98,7 +87,6 @@ setup(name='d3q15',
       author='Rupert Nash',
       author_email='rupert.nash@ed.ac.uk',
       packages=['d3q15', 'd3q15.fallers'],
-#      ext_package='d3q15',
       ext_modules=ext_modules
       )
 

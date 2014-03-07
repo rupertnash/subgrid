@@ -15,20 +15,20 @@ static int arrayOK(PyObject *o) {
   a = (PyArrayObject *)o;
   
   /* check array of doubles */
-  if (a->descr->type_num != PyArray_DOUBLE) {
+  if (PyArray_DTYPE(a)->type_num != NPY_DOUBLE) {
     PyErr_Format(PyExc_ValueError, "ArrayObject must be of type Float (a C double)");
     return 0;
   }
   
   /* check no. dimensions */
-  if (a->nd != 2) {
-    PyErr_Format(PyExc_ValueError, "ArrayObject must be 2-dimensional (is %d)", a->nd);
+  if (PyArray_NDIM(a) != 2) {
+    PyErr_Format(PyExc_ValueError, "ArrayObject must be 2-dimensional (is %d)", PyArray_NDIM(a));
     return 0;
   }
   
   /* check the 2nd dimension is 3D */
-  if (a->dimensions[1] != DQ_d) {
-    PyErr_Format(PyExc_ValueError, "ArrayObject must be an array of %dD vectors (2nd array size is %" NPY_INTP_FMT ")", DQ_d, a->dimensions[1]);
+  if (PyArray_DIM(a, 1) != DQ_d) {
+    PyErr_Format(PyExc_ValueError, "ArrayObject must be an array of %dD vectors (2nd array size is %" NPY_INTP_FMT ")", DQ_d, PyArray_DIM(a, 1));
     return 0;
   }
   
@@ -111,17 +111,17 @@ void utils_addForceAtPosition_array(Lattice *lat,
   FArrayObj = (PyArrayObject *)FObj;
   
   /* get number of pos/force pairs */
-  num = rArrayObj->dimensions[0];
+  num = PyArray_DIM(rArrayObj, 0);
   /* check forceArrayObj has the same number */
-  if (FArrayObj->dimensions[0] != num) {
+  if (PyArray_DIM(FArrayObj, 0) != num) {
     PyErr_Format(PyExc_ValueError, "FArrayObj and rArrayObj must have the same length");
     return;
   }
   
-  r = (double *)rArrayObj->data;
-  F = (double *)FArrayObj->data;
-  rNext = rArrayObj->strides[0]/sizeof(double);
-  FNext = FArrayObj->strides[0]/sizeof(double);
+  r = (double *)PyArray_DATA(rArrayObj);
+  F = (double *)PyArray_DATA(FArrayObj);
+  rNext = PyArray_STRIDE(rArrayObj, 0)/sizeof(double);
+  FNext = PyArray_STRIDE(FArrayObj, 0)/sizeof(double);
   
   for (n=0; n<num; ++n) {
     utils_addForceAtPosition_single(lat, F, r);
@@ -193,17 +193,17 @@ void utils_interp_array(Lattice *lat, PyObject *rObj, PyObject * vObj) {
   vArrayObj = (PyArrayObject *)vObj;
   
   /* get number of pos/force pairs */
-  num = rArrayObj->dimensions[0];
+  num = PyArray_DIM(rArrayObj, 0);
   /* check forceArrayObj has the same number */
-  if (vArrayObj->dimensions[0] != num) {
+  if (PyArray_DIM(vArrayObj, 0) != num) {
     PyErr_Format(PyExc_ValueError, "rArrayObj and vArrayObj must have the same length");
     return;
   }
 
-  r = (double *)rArrayObj->data;
-  v = (double *)vArrayObj->data;
-  rNext = rArrayObj->strides[0]/sizeof(double);
-  vNext = vArrayObj->strides[0]/sizeof(double);
+  r = (double *)PyArray_DATA(rArrayObj);
+  v = (double *)PyArray_DATA(vArrayObj);
+  rNext = PyArray_STRIDE(rArrayObj, 0)/sizeof(double);
+  vNext = PyArray_STRIDE(vArrayObj, 0)/sizeof(double);
   
   for (n=0; n<num; ++n) {
     utils_interp_single(lat, r, v);

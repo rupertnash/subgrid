@@ -7,6 +7,11 @@ def cache(filename, *argPatterns, **kwargPatterns):
     the results of a function call (of a function with a first arg
     of "base") to "base/filename"
     """
+    if callable(filename):
+        # If we've been given a function, just use the function's name
+        # as the filename.
+        return cache(filename.func_name, *argPatterns, **kwargPatterns)(filename)
+    
     def decorator(f):
         # this is the actual decorator
         # f is the function to be modified

@@ -177,10 +177,9 @@ class SwimmerArray(d3q15.XArray):
             rDot += self.G
             pass
         
-#        h = self.hydroRadius
+        h = self.hydroRadius
 
-#        rDot *= (h - self.a) / (6. * N.pi * self.eta * self.a * h)
-        rDot *= 1. / (6. * N.pi * self.eta * self.a)
+        rDot *= (1./self.a - 1./h) / (6. * N.pi * self.eta)
         rDot += v
         
         # rPlus = self.r

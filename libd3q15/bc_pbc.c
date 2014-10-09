@@ -50,40 +50,29 @@ void bc_pbc_update(Lattice *lat) {
 		   i[1]>0 && i[1]<n[1]+1 && \
 		   i[2]>0 && i[2]<n[2]+1)
 
+/* i = halo site */
 void bc_pbc_do_site(Lattice *lat, int i[DQ_d], int n[DQ_d]) {
   int d, p;
   int tgt[DQ_d], src[DQ_d];
 
   for (p=0; p< DQ_q; p++) {
-    /* For each velocity, work out the index of the node
-     * that will be reached:
-     *     tgt = i + xi[p]
-     */
+    /* Work out which indices correspond to real f's that we got from
+       the bulk. */
+    int pPrime = lat->complement[p];
     for (d=0; d<DQ_d; d++) {
-      tgt[d] = i[d]+ lat->xi[p][d];
+      src[d] = i[d]+ lat->ci[pPrime][d];
     }
     
-    if isbulk(tgt) {
-	/* This velocity will propagate to a node in the bulk,
-	 * so must copy the distribution from the other side 
-	 * of the box; work out what its index is.
-	 */
-	for (d=0; d<DQ_d; d++) {
-	  
-	  if (i[d]==0) {
-	    src[d] = n[d];
-	  } else if (i[d]==n[d]+1) {
-	    src[d] = 1;
-	  } else {
-	    src[d] = i[d];
-	  }
-	  
-	}
+    if isbulk(src) {
+      /* We got f(i, p) from src - must send it to the other side of
+       * the box. */
 	
-	/* Actually do the copy */
-	DQ_f_get(lat, i[0],i[1],i[2], p) = DQ_f_get(lat, src[0],src[1],src[2], p);
+      for (d=0; d<DQ_d; d++) {
+	tgt[d] = (src[d] - 1 + lat->ci[p][d]) % n[d] + 1;
       }
+      
+      DQ_f_get(lat, tgt[0],tgt[1],tgt[2], p) = DQ_f_get(lat, i[0],i[1],i[2], p);
+    }
   }
-  
 }
 #undef isbulk

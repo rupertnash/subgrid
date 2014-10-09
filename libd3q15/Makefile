@@ -1,8 +1,5 @@
-LIBDIR = $(HOME)/lib
-INCDIR = $(HOME)/include
-
 CC = gcc
-CFLAGS = -Wall -std=c99 -g -I$(HOME)/include
+CFLAGS = -fopenmp -Wall -std=c99 -g
 
 AR = ar rc
 
@@ -13,7 +10,7 @@ libobjs = d3q15.o checks.o noise.o \
 	bc_pbc.o bc_noslip.o bc_freeslip.o bc_wall.o \
 	force_none.o force_const.o
 
-headers = d3q15.h Lattice.h noise.h eigenvectors.h
+headers = d3q15.h Lattice.h noise.h eigenvectors.h omp.h
 
 $(LIB) : $(libobjs)
 	$(AR) $@ $^
@@ -25,13 +22,6 @@ $(LIB) : $(libobjs)
 eigenvectors.h : eigenvectors.py
 	python $< C > $@
 
-#install : $(LIB)
-#	cp $(LIB) $(LIBDIR)
-#	if [ ! -d $(INCDIR)/libd2q9 ] ; then \
-#	  mkdir $(INCDIR)/libd2q9; \
-#	fi
-#	cp *.h $(INCDIR)/libd2q9;
-
 .PHONY : clean
 clean :
-	-rm libd3q15.a $(libobjs) eigenvectors.h
+	-rm -f libd3q15.a $(libobjs) eigenvectors.h

@@ -3,6 +3,8 @@
 /* A Lattice type for ease of passing the important parameters 
  * and (pointers to) the Lattice around.
  */
+typedef struct BlockSched BlockSched;
+
 typedef struct Lattice {
   /* Could be useful anywhere */
 
@@ -10,8 +12,11 @@ typedef struct Lattice {
   double cs2;
   /* quadrature weights */
   double w[DQ_q];
-  /* velocities */
+  /* velocities - as doubles */
   double xi[DQ_q][DQ_d];
+  /* velocities - as ints */
+  int ci[DQ_q][DQ_d];
+  
   /* Kinetic projector, Q_i_ab = xi_i_a * xi_i_b - delta_ab cs^2 */
   double Q[DQ_q][DQ_d][DQ_d];
   
@@ -41,7 +46,8 @@ typedef struct Lattice {
    * hydrodynamic variables (so that they can be output/visualised 
    * more easily. 
    */
-  double *f_ptr;
+  double *f_current_ptr;
+  double *f_new_ptr;
   double *rho_ptr;
   double *u_ptr;
   double *force_ptr;
@@ -59,7 +65,8 @@ typedef struct Lattice {
 
   /* Pointer to the noise config. */
   NoiseConfig *noise;
-
+  
+  BlockSched* block_schedule;
   /* A pointer to whatever other information might be needed by 
    * the controlling code. Casts to and from void will be needed.
    */
@@ -67,7 +74,8 @@ typedef struct Lattice {
 } Lattice;
 
 typedef struct Site {
-  double *f;
+  double *f_current;
+  double *f_new;
   double *rho;
   double *u;
   double *force;
@@ -76,7 +84,8 @@ typedef struct Site {
 #define set_site(L, s, i,j,k) {int ijk= ((i) * L->strides[DQ_X] + \
 			  	         (j) * L->strides[DQ_Y] + \
 				         (k) * L->strides[DQ_Z]); \
-                               s.f     = L->f_ptr     + ijk*DQ_q; \
+                               s.f_current = L->f_current_ptr + ijk*DQ_q; \
+                               s.f_new     = L->f_new_ptr     + ijk*DQ_q; \
                                s.rho   = L->rho_ptr   + ijk;	  \
                                s.u     = L->u_ptr     + ijk*DQ_d; \
                                s.force = L->force_ptr + ijk*DQ_d; }

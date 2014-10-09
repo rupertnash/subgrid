@@ -162,11 +162,19 @@ lat->cs2 = %s;
         initCode += "lat->w[%d] = %s;\n" % (i, w[i])
 
     initCode += """
-/* velocity vectors */
+/* velocity vectors - double */
 """
     for i in range(nvel):
         for j in range(ndim):
             initCode += "lat->xi[%d][%d] = %s; " %(i,j, xi[i,j])
+        initCode += "\n"
+
+    initCode += """
+/* velocity vectors - int */
+"""
+    for i in range(nvel):
+        for j in range(ndim):
+            initCode += "lat->ci[%d][%d] = %s; " %(i,j, xi[i,j])
         initCode += "\n"
 
     initCode += """

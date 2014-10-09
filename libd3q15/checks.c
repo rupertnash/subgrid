@@ -16,11 +16,11 @@ void total_mass_and_momentum(Lattice *lat, double *mass, double mom[DQ_d]) {
 	set_site(lat, site, i,j,k);
 	
 	for (p=0; p<DQ_q; p++) {
-	  mass[0] += site.f[p];
+	  mass[0] += site.f_current[p];
 	  
-	  mom[DQ_X] += lat->xi[p][DQ_X] * site.f[p];
-	  mom[DQ_Y] += lat->xi[p][DQ_Y] * site.f[p];
-	  mom[DQ_Z] += lat->xi[p][DQ_Z] * site.f[p];
+	  mom[DQ_X] += lat->xi[p][DQ_X] * site.f_current[p];
+	  mom[DQ_Y] += lat->xi[p][DQ_Y] * site.f_current[p];
+	  mom[DQ_Z] += lat->xi[p][DQ_Z] * site.f_current[p];
 	  
 	}
 	

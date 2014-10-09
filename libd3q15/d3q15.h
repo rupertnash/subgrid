@@ -1,5 +1,7 @@
 #ifndef D3Q15_H
 #define D3Q15_H
+
+#define DQ_NEW 1
 /* Dimension */
 #define DQ_d 3
 /* number of velocities */
@@ -12,7 +14,7 @@
 
 
 /* Macros for accessing  elements in the way you'd expect. */
-#define DQ_f_get(L, i,j,k, m) *(L->f_ptr + ((i) * L->strides[DQ_X] +\
+#define DQ_f_get(L, i,j,k, m) *(L->f_current_ptr + ((i) * L->strides[DQ_X] +\
 					 (j) * L->strides[DQ_Y] +\
 					 (k) * L->strides[DQ_Z]) * DQ_q + (m))
 
@@ -37,15 +39,14 @@ typedef struct NoiseConfig NoiseConfig;
 /* function declarations */
 Lattice *d3q15_init(int nx, int ny, int nz, double tau_s, double tau_b);
 void d3q15_iterate(Lattice *lat, int n_steps);
+void d3q15_step(Lattice *lat);
 void d3q15_destroy(Lattice *lat);
 
-void propagate(Lattice *lat);
-void collide(Lattice *lat);
+void dq_push(Lattice *lat, const int i, const int j, const int k, const double fPostCollision[DQ_q]);
+void dq_collide(const Lattice *lat, const int i, const int j, const int k, double fPostCollision[DQ_q]);
 
 void calc_equil(double rho, double *u, double *f_eq);
 void calc_hydro(Lattice *lat);
-
-void calc_phi(double force[], double rho, double u[], double ans[]);
 
 /* Forces... */
 void force_none_init(Lattice *lat);

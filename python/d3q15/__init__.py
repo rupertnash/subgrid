@@ -157,7 +157,7 @@ class LatticeWithStuff(Lattice):
         positions of the Things.
         
         """
-        Lattice.step(self, 1)
+        Lattice.step(self)
         assert N.alltrue(N.isfinite(self.f.flat))
         self.updateHydroVars()
         assert N.alltrue(N.isfinite(self.u.flat))

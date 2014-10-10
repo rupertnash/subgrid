@@ -17,6 +17,9 @@
 #define DQ_f_get(L, i,j,k, m) *(L->f_current_ptr + ((i) * L->strides[DQ_X] +\
 					 (j) * L->strides[DQ_Y] +\
 					 (k) * L->strides[DQ_Z]) * DQ_q + (m))
+#define DQ_f_new_get(L, i,j,k, m) *(L->f_new_ptr + ((i) * L->strides[DQ_X] +\
+					 (j) * L->strides[DQ_Y] +\
+					 (k) * L->strides[DQ_Z]) * DQ_q + (m))
 
 /* These could easily be replaced with functions to save memory */
 #define DQ_rho_get(L, i,j,k) *(L->rho_ptr + ((i) * L->strides[DQ_X] +\

@@ -110,6 +110,29 @@ Lattice *d3q15_init(int nx, int ny, int nz, double tau_s, double tau_b) {
   }}}
   for (int d=0; d<DQ_d; d++)
     free(bounds[d]);
+
+  /* Now, go and touch the f's from the core that will be in charge of
+     them to ensure they're allocated in the proper NUMA region. */
+#pragma omp parallel for
+  for (int iBlock=0; iBlock<lat->block_schedule->n; iBlock++) {
+    
+    int min[DQ_d];
+    int max[DQ_d];
+    for (int d=0; d<DQ_d; d++) {
+      min[d] = lat->block_schedule->blocks[iBlock].min[d];
+      min[d] = (min[d] == 1 ? 0 : min[d]);
+      max[d] = lat->block_schedule->blocks[iBlock].max[d];
+      max[d] = (max[d] == nSites[d] ? nSites[d]+1 : max[d]);
+    }
+    for (int i=min[0]; i<max[0]; i++) {
+    for (int j=min[1]; j<max[1]; j++) {
+    for (int k=min[2]; k<max[2]; k++) {
+      for (int p=0; p<DQ_q; p++) {
+	DQ_f_get(lat, i, j, k, p) = 0.0;
+	DQ_f_new_get(lat, i, j, k, p) = 0.0;
+      }
+    }}}
+  }
   return lat;
 }
 
@@ -141,11 +164,11 @@ void d3q15_step(Lattice* lat) {
   /* We have to work out the force first */
   (*lat->force_func)(lat);
 
-#pragma omp parallel for schedule(dynamic)
-  for (int i=0; i<lat->block_schedule->n; i++) {
+#pragma omp parallel for
+  for (int iBlock=0; iBlock<lat->block_schedule->n; iBlock++) {
     
-    int* min = lat->block_schedule->blocks[i].min;
-    int* max = lat->block_schedule->blocks[i].max;
+    int* min = lat->block_schedule->blocks[iBlock].min;
+    int* max = lat->block_schedule->blocks[iBlock].max;
     
     for (int i=min[0]; i<max[0]; i++) {
     for (int j=min[1]; j<max[1]; j++) {
@@ -176,11 +199,11 @@ void dq_push(Lattice *lat, const int i, const int j, const int k, const double f
   const int* cp;
   for (int p=0; p<DQ_q; p++) {
     cp = lat->ci[p];
-    DQ_f_get(lat,
-	     i + cp[0],
-	     j + cp[1],
-	     k + cp[2],
-	     p) = fPostCollision[p];
+    DQ_f_new_get(lat,
+		 i + cp[0],
+		 j + cp[1],
+		 k + cp[2],
+		 p) = fPostCollision[p];
   }
 }
 void dq_pull(const Lattice *lat, const int i, const int j, const int k, double fPreCollision[DQ_q]) {

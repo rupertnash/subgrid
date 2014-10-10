@@ -157,21 +157,18 @@ class LatticeWithStuff(Lattice):
         positions of the Things.
         
         """
-        for t in range(n):
-            Lattice.step(self, 1)
-            assert N.alltrue(N.isfinite(self.f.flat))
-            self.updateHydroVars()
-            assert N.alltrue(N.isfinite(self.u.flat))
+        Lattice.step(self, 1)
+        assert N.alltrue(N.isfinite(self.f.flat))
+        self.updateHydroVars()
+        assert N.alltrue(N.isfinite(self.u.flat))
 
-            if self.warmup:
-                continue
-            
-	    for th in self.things:
-		th.move(self)
-		continue
-	    
+        if self.warmup:
+            return
+
+        for th in self.things:
+            th.move(self)
             continue
-	return
+        return
     
     def add(self, thingClass, *args, **kwargs):
         """Calls the constructor/factory function supplied, and adds

@@ -158,7 +158,7 @@ class LatticeWithStuff(Lattice):
         
         """
         Lattice.step(self)
-        assert N.alltrue(N.isfinite(self.f.flat))
+        assert N.alltrue(N.isfinite(self.f_current.flat))
         self.updateHydroVars()
         assert N.alltrue(N.isfinite(self.u.flat))
 

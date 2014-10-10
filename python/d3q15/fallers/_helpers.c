@@ -58,6 +58,7 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
   fStart = XArray_getStart(self, 'F');
   aStart = XArray_getStart(self, 'a');
   
+#pragma omp parallel for schedule(guided)
   for (i=0; i<numFallers; ++i) {
     /* set up pointers to the correct parts of the array */
     r = fallers + numCols*i + rStart;
@@ -75,7 +76,7 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
       
       v[j] = vinterp[j] + /* advection */
 	F[j] * (1./a - 1./hydroRadius) / (6. * M_PI * eta) + /* sedimentation*/
-	noiseStDev*gasdev(&lat->noise->seed); /* diffusion */
+	noiseStDev*gasdev_get(lat->noise->gds); /* diffusion */
 
       /* Calculate the new position, assuming unit timestep */
       r[j] += v[j];
@@ -149,6 +150,7 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
   fStart = XArray_getStart(self, 'F');
   aStart = XArray_getStart(self, 'a');
 
+#pragma omp parallel for schedule(guided)
   for (i=0; i<numFallers; ++i) {
     /* set up pointers to the correct parts of the array */
     r = fallers + numCols*i + rStart;
@@ -170,7 +172,7 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
       
       v[j] = vinterp[j] + /* advection */
 	F[j] * (1./a - 1./hydroRadius) / (6. * M_PI * eta) + /* sedimentation*/
-	noiseStDev*gasdev(&lat->noise->seed); /* diffusion */
+	noiseStDev*gasdev_get(lat->noise->gds); /* diffusion */
 
       /* Calculate the new position, assuming unit timestep */
       r[j] += v[j];
@@ -240,6 +242,7 @@ void PDFallerArray_addPotentialDipoles(PyObject *self, Lattice *lat) {
 
 #define mod(a, n)  ((a)<1 ? (a)+n : ((a)>n ? (a)-n: (a)))
  
+#pragma omp parallel for schedule(guided)
   for (n=0; n<numFallers; ++n) {
     /* set up pointers to the correct parts of the array */
     r = fallers + numCols*n + rStart;

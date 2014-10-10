@@ -8,8 +8,8 @@ import numpy
 
 numpyIncludeDir = numpy.get_include()
 
-compile_args = []
-link_args = []
+compile_args = ['-fopenmp']
+link_args = ['-fopenmp']
 if os.path.exists('debug'):
     compile_args += ['-O0', '-U NDEBUG']
     
@@ -55,7 +55,7 @@ ext_modules = [Extension('d3q15._d3q15', ['d3q15/d3q15.i',
                Extension('d3q15.fallers.__helpers',
                          ['d3q15/fallers/helpers.i',
                           'd3q15/fallers/_helpers.c',
-                          libSrcDir+'noise.c',
+                          #libSrcDir+'noise.c',
                           'd3q15/XArray.c',
                           'd3q15/CDelta.c',
                           'd3q15/utils.c'],

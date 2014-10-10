@@ -103,7 +103,7 @@ class Controller(object):
         enough.
         
         """
-        self.lat.step(1)
+        self.lat.step()
 
         if self.isRecordStep():
             self.log('Time step %d of %d' %
@@ -202,7 +202,7 @@ class BaseController(Controller):
     
     def __init__(self, lat, baseName, outSteps, totalSteps, cpInterval):
         """lat -- an LB lattice object (or any self contained
-        object with a step(int numsteps) method and a
+        object with a step() method and a
         property/attribute int time_step.
         
         baseName -- the name of the directory in which to store

@@ -152,7 +152,7 @@ class LatticeWithStuff(Lattice):
         self.warmup = False
 	return
     
-    def step(self, n):
+    def step(self):
         """Steps the system forward n time steps, including updating the
         positions of the Things.
         

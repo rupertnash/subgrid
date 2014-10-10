@@ -195,7 +195,8 @@ def test():
     lat.add(FallerArray, r_list=posns, a=a, F=F, hydroRadius=hydroRadius)
     lat.initFromHydroVars()
     try:
-        lat.step(int(1/v_s))
+        for i in xrange(int(1/v_s)):
+            lat.step()
     except KeyboardInterrupt:
         print "Skipping..."
         pass
@@ -207,7 +208,8 @@ def test():
     lat.add(FallerArray, r_list=posns, a=a, F=F, hydroRadius=hydroRadius, pd=True)
     lat.initFromHydroVars()
     try:
-        lat.step(int(1/v_s))
+        for i in xrange(int(1/v_s)):
+            lat.step()
         print "Heights should be approx: " +str(posns[:,2] - 1)
         print "Are: " + str(lat.things[-1].r[:,2])
     except KeyboardInterrupt:
@@ -221,7 +223,8 @@ def test():
     lat.add(FallerArray, r_list=posns, a=a, F=F, hydroRadius=hydroRadius, static=True)
     lat.initFromHydroVars()
     try:
-        lat.step(int(1/v_s))
+        for i in xrange(int(1/v_s)):
+            lat.step()
     except KeyboardInterrupt:
         print "Skipping..."
         pass
@@ -233,7 +236,8 @@ def test():
     lat.add(FallerArray, r_list=posns, a=a, F=F, hydroRadius=hydroRadius, pd=True, static=True)
     lat.initFromHydroVars()
     try:
-        lat.step(int(1/v_s))
+        for i in xrange(int(1/v_s)):
+            lat.step()
     except KeyboardInterrupt:
         print "Skipping..."
         pass
@@ -245,7 +249,8 @@ def test():
     lat.add(FallerArray, r_list=posns, a=a, F=F, hydroRadius=hydroRadius, walls=True)
     lat.initFromHydroVars()
     try:
-        lat.step(int(1/v_s))
+        for i in xrange(int(1/v_s)):
+            lat.step()
     except KeyboardInterrupt:
         print "Skipping..."
         pass

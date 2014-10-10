@@ -1,10 +1,12 @@
 /* -*- mode: c; -*- */
-%ignore Lattice::f_ptr;
+%ignore Lattice::f_current_ptr;
+%ignore Lattice::f_new_ptr;
 %ignore Lattice::rho_ptr;
 %ignore Lattice::force_ptr;
 %ignore Lattice::u_ptr;
 %ignore Lattice::w;
 %ignore Lattice::xi;
+%ignore Lattice::ci;
 %ignore Lattice::Q;
 %ignore Lattice::complement;
 %ignore Lattice::mm;
@@ -35,12 +37,9 @@
  * any Python API functions must be listed here to have 
  * exception checking done.
  */
-EXC_CHECK(updateForce)
 EXC_CHECK(initForceC)
 EXC_CHECK(setForceC)
 EXC_CHECK(setForcePy)
-/* EXC_CHECK(initBoundaryC_) */
-/* EXC_CHECK(setBoundaryC) */
 EXC_CHECK(__initBC_periodic)
 EXC_CHECK(__initBC_noslip)
 EXC_CHECK(__initBC_freeslip)
@@ -71,20 +70,6 @@ EXC_CHECK(force_set)
   // Destructor
   ~Lattice() {
     d3q15_destroy($self);
-  }
-  
-  /* wrappers for the main stages of the process */
-  void propagate() {
-    propagate($self);
-  }
-  void collide() {
-    collide($self);
-  }
-  void updateForce() {
-    (*$self->force_func)($self);
-  }
-  void updateBoundary() {
-    (*$self->bc_func)($self);
   }
   
   void updateHydroVars() {
@@ -261,53 +246,6 @@ EXC_CHECK(force_set)
         
         return
   %}
-  /* And similarly for the boundary conditions */
-/*   void initBoundaryC_(char *name, ...) { */
-/*     /\* Initialises the boundaries and sets the update to */
-/*      * a C function, whose name is one of the options below. */
-/*      *\/ */
-/*     va_list arg_p; */
-/*     va_start(arg_p, name); */
-    
-/*     if (!strcmp(name, "periodic") ){ */
-/*       bc_pbc_init($self); */
-/*       $self->bc_func = bc_pbc_update; */
-      
-/*     } else if (!strcmp(name, "noslip")) { */
-/*       bc_noslip_init($self); */
-/*       $self->bc_func = bc_noslip_update; */
-      
-/*     } else if (!strcmp(name, "wall")) { */
-/*       bc_wall_init($self); */
-/*       $self->bc_func = bc_wall_update; */
-      
-/*     } else { */
-/*       PyErr_Format(PyExc_ValueError, "unknown boundary type %s", name); */
-/*     } */
-    
-/*     va_end(arg_p); */
-/*   } */
-
-/*   void setBoundaryC(char *name) { */
-/*     /\* Initialises the boundaries and sets the update to */
-/*      * a C function, whose name is one of the options below. */
-/*      *\/ */
-    
-/*     if (!strcmp(name, "periodic") ){ */
-/*       $self->bc_func = bc_pbc_update; */
-      
-/*     } else if (!strcmp(name, "noslip")) { */
-/*       $self->bc_func = bc_noslip_update; */
-      
-/*     } else if (!strcmp(name, "wall")) { */
-/*       $self->bc_func = bc_wall_update; */
-      
-/*     } else { */
-/*       PyErr_Format(PyExc_ValueError, "unknown boundary type %s", name); */
-/*     } */
-    
-/*   } */
-
   
   /* Given the hydrodynamic fields, initialises the distribution
    * function array to their equilibrium values.
@@ -322,8 +260,8 @@ EXC_CHECK(force_set)
   }
 
   /* pseduo method wrapper */
-  void step(int n_steps) {
-    d3q15_iterate($self, n_steps);
+  void step() {
+    d3q15_step($self);
   }
   
   /* methods to get the sizes of the arrays */
@@ -345,7 +283,7 @@ EXC_CHECK(force_set)
   const double totalMass;
   PyObject *totalMomentum;
 
-  PyObject *f_get() {
+  PyObject *f_current_get() {
     /* Return a NumPy array Object whose data section points
      * to the Lattice's distribution data.
      */
@@ -361,12 +299,12 @@ EXC_CHECK(force_set)
     resultobj = PyArray_SimpleNewFromData(n_dims,
 					  dims,
 					  NPY_DOUBLE,
-					  (void *)$self->f_ptr);
+					  (void *)$self->f_current_ptr);
     
     return resultobj;
   }
   
-  void f_set(PyObject *obj) {
+  void f_current_set(PyObject *obj) {
     PyArrayObject *array = NULL;
     double *data = NULL;
     int i;
@@ -410,7 +348,76 @@ EXC_CHECK(force_set)
     /* copy */
     data = (double *)PyArray_DATA(array);
     for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2)*DQ_q; i++)
-      $self->f_ptr[i] = data[i];
+      $self->f_current_ptr[i] = data[i];
+    
+  }
+  
+  PyObject *f_new_get() {
+    /* Return a NumPy array Object whose data section points
+     * to the Lattice's distribution data.
+     */
+    PyObject *resultobj = NULL;
+    int n_dims = DQ_d + 1;
+    npy_intp dims[n_dims];
+    
+    dims[0] = $self->nx + 2;
+    dims[1] = $self->ny + 2;
+    dims[2] = $self->nz + 2;
+    dims[3] = DQ_q;
+    
+    resultobj = PyArray_SimpleNewFromData(n_dims,
+					  dims,
+					  NPY_DOUBLE,
+					  (void *)$self->f_new_ptr);
+    
+    return resultobj;
+  }
+  
+  void f_new_set(PyObject *obj) {
+    PyArrayObject *array = NULL;
+    double *data = NULL;
+    int i;
+    
+    /* check it's a numpy array */  
+    if (!PyArray_Check(obj)) {
+      PyErr_Format(PyExc_ValueError, "must set to a numpy array");
+      return;
+    }
+    
+    array = (PyArrayObject *)obj;
+    /* check it's an array of doubles */
+    if (PyArray_DTYPE(array)->type_num != NPY_DOUBLE) {
+      PyErr_Format(PyExc_ValueError, "array must be of type Float (a C double)");
+      return;
+    }
+    
+    /* check it has the right no. dimensions */
+    if (PyArray_NDIM(array) != DQ_d+1) {
+      PyErr_Format(PyExc_ValueError, "array must be %d-dimensional (is %d)", DQ_d+1, PyArray_NDIM(array));
+      return;
+    }
+    
+    /* check the dimensions match */
+    npy_intp *dims = PyArray_DIMS(array);
+    if (dims[0] != $self->_x_ar_size || 
+        dims[1] != $self->_y_ar_size ||
+        dims[2] != $self->_z_ar_size ||
+        dims[3] != DQ_q) {
+      PyErr_Format(PyExc_ValueError,
+		   "array must sized %d x %d x %d x %d (is %" NPY_INTP_FMT 
+		   " x %" NPY_INTP_FMT
+		   " x %" NPY_INTP_FMT
+		   " x %" NPY_INTP_FMT ")",
+		   $self->_x_ar_size,$self->_y_ar_size,$self->_z_ar_size,DQ_q,
+		   dims[0], dims[1],
+		   dims[2], dims[3]);
+      return;
+    }
+    
+    /* copy */
+    data = (double *)PyArray_DATA(array);
+    for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2)*DQ_q; i++)
+      $self->f_new_ptr[i] = data[i];
     
   }
   
@@ -630,9 +637,9 @@ EXC_CHECK(force_set)
  * setters to implement properties for the distributions, rho, u & force
  */
 %pythoncode %{
-    __swig_setmethods__["f"] = _d3q15.Lattice_f_set
-    __swig_getmethods__["f"] = _d3q15.Lattice_f_get
-    if _newclass:f = _swig_property(_d3q15.Lattice_f_get, _d3q15.Lattice_f_set)
+    __swig_setmethods__["f_current"] = _d3q15.Lattice_f_current_set
+    __swig_getmethods__["f_current"] = _d3q15.Lattice_f_current_get
+    if _newclass:f_current = _swig_property(_d3q15.Lattice_f_current_get, _d3q15.Lattice_f_current_set)
     
     __swig_setmethods__["rho"] = _d3q15.Lattice_rho_set
     __swig_getmethods__["rho"] = _d3q15.Lattice_rho_get
@@ -658,7 +665,8 @@ EXC_CHECK(force_set)
         """Enables pickling - creates the actual data to be
         serialized."""
         picdict = {}
-        picdict['fields'] = {'f': self.f,
+        picdict['fields'] = {'f_current': self.f_current,
+			     'f_new': self.f_new,
                              'force': self.force,
                              'u': self.u,
                              'rho': self.rho}
@@ -672,7 +680,8 @@ EXC_CHECK(force_set)
         self.time_step = picdict['time_step']
         self.noise.temperature = picdict['temperature']
         self.noise.seed = picdict['noiseSeed']
-        self.f = picdict['fields']['f']
+        self.f_current = picdict['fields']['f_current']
+        self.f_new = picdict['fields']['f_new']
         self.force = picdict['fields']['force']
         self.u = picdict['fields']['u']
         self.rho = picdict['fields']['rho']

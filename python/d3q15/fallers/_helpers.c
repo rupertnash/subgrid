@@ -8,15 +8,16 @@
 #include "../DQarrayobject.h"
 #include <math.h>
 
+/**
+ * Update the positions of an array of fallers (periodic boundary
+ * conditions).
+ */
 void FallerArray_move(PyObject *self, Lattice *lat) {
   PyObject *fallerData;
   double *fallers;
   int numFallers, numCols;
-  double vinterp[DQ_d];
-  int i, j;
-  /* radius, position, velocity  & force on a particular particle */
-  double a, *r, *s, *v, *F;
-  /* and their start positions within each row of the table */
+  int i;
+  /* Start positions of particle data within each row of the table */
   int aStart, rStart, sStart, vStart, fStart;
   double hydroRadius, eta, noiseStDev;
   int size[DQ_d], tracks;
@@ -60,6 +61,10 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
   
 #pragma omp parallel for schedule(guided)
   for (i=0; i<numFallers; ++i) {
+    /* radius, position, velocity  & force on a particular particle */
+    double a, *r, *s, *v, *F;
+    double vinterp[DQ_d];
+    int j;
     /* set up pointers to the correct parts of the array */
     r = fallers + numCols*i + rStart;
     if (tracks)
@@ -104,10 +109,7 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
   PyObject *fallerData;
   double *fallers;
   int numFallers, numCols;
-  double vinterp[DQ_d];
-  int i, j;
-  /* radius, position, velocity  & force on a particular particle */
-  double a, *r, *s, *v, *F;
+  int i;
   /* and their start positions within each row of the table */
   int aStart, rStart, sStart, vStart, fStart;
   double hydroRadius, eta, noiseStDev;
@@ -152,6 +154,10 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
 
 #pragma omp parallel for schedule(guided)
   for (i=0; i<numFallers; ++i) {
+    /* radius, position, velocity  & force on a particular particle */
+    double a, *r, *s, *v, *F;
+    double vinterp[DQ_d];
+    int j;
     /* set up pointers to the correct parts of the array */
     r = fallers + numCols*i + rStart;
     if (tracks)

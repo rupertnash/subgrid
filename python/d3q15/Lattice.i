@@ -641,6 +641,10 @@ EXC_CHECK(force_set)
     __swig_getmethods__["f_current"] = _d3q15.Lattice_f_current_get
     if _newclass:f_current = _swig_property(_d3q15.Lattice_f_current_get, _d3q15.Lattice_f_current_set)
     
+    __swig_setmethods__["f_new"] = _d3q15.Lattice_f_current_set
+    __swig_getmethods__["f_new"] = _d3q15.Lattice_f_current_get
+    if _newclass:f_new = _swig_property(_d3q15.Lattice_f_new_get, _d3q15.Lattice_f_new_set)
+    
     __swig_setmethods__["rho"] = _d3q15.Lattice_rho_set
     __swig_getmethods__["rho"] = _d3q15.Lattice_rho_get
     if _newclass:rho = _swig_property(_d3q15.Lattice_rho_get, _d3q15.Lattice_rho_set)

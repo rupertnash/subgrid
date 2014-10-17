@@ -2,36 +2,56 @@
 #define NO_IMPORT_ARRAY
 #include "DQarrayobject.h"
 
-static PyObject *last = NULL;
-static PyArrayObject *table = NULL;
-static PyArrayObject *data = NULL;
+/* cTable has 4 columns: key, startPos, length, reserved */
+#define XARRAY_TABLE_COLS 4
 
-static void XArray_updateCache(PyObject *self) {
+typedef struct XArrayCtxFull {
+  PyObject* self;
+  size_t nKeys, nCols, nRows;
+  char* table;
+  double* data;
+  PyArrayObject* tableObj;
+  PyArrayObject* dataObj;
+} XArrayCtxFull;
+
+
+
+XArrayCtx* XArray_initCtx(PyObject* self) {
+  XArrayCtxFull* ctx = (XArrayCtxFull*)malloc(sizeof(XArrayCtxFull));
+  /* we haven't so extract some C values from the Python structures -
+     note these are NEW REFERENCES - hang onto them for the lifetime
+     of the context to ensure the PyObject isn't killed.
+  */
+  ctx->self = self;
+  /* get the lookup table for columns */
+  ctx->tableObj = (PyArrayObject *)PyObject_GetAttrString(self, "cTable");
+  /* Number of keys */
+  ctx->nKeys = PyArray_DIM(ctx->tableObj, 0);
+  /* Raw pointer to table */
+  ctx->table = PyArray_DATA(ctx->tableObj);
   
-  if (self == last) {
-    /* we saw this one last time and since the table & number of cols etc.
-       is fixed, we don't need to update the values stored. */
-  } else {
-    /* we haven't so extract some C values from the Python structures */
-    data = (PyArrayObject *)PyObject_GetAttrString(self, "data");
-    /* get the lookup table for columns */
-    table = (PyArrayObject *)PyObject_GetAttrString(self, "cTable");
-  }
-
+  /* Now get the actual data numpy array */
+  ctx->dataObj = (PyArrayObject *)PyObject_GetAttrString(self, "data");
+  /* Store its shape */
+  ctx->nRows = PyArray_DIM(ctx->dataObj, 0);
+  ctx->nCols = PyArray_DIM(ctx->dataObj, 1);
+  /* Raw pointer to data */
+  ctx->data = PyArray_DATA(ctx->dataObj);
+  
+  return (XArrayCtx*)ctx;
+}
+void XArray_delCtx(XArrayCtx* ctx) {
+  XArrayCtxFull* fullCtx = (XArrayCtxFull*)ctx;
+  Py_DECREF(fullCtx->dataObj);
+  Py_DECREF(fullCtx->tableObj);
+  free(fullCtx);
 }
 
-int XArray_hasKey(PyObject *self, char k) {
-  int nRows, nCols, i;
-  char *array;
-  
-  XArray_updateCache(self);
-  
-  nRows = PyArray_DIM(table, 0);
-  nCols = PyArray_DIM(table, 1);
-  array = PyArray_DATA(table);
-  
-  for (i=0; i<nRows; i++) {
-    if (array[i*nCols + 0] == k) {
+
+int XArray_hasKey(XArrayCtx* ctx, char k) {
+  int i;
+  for (i=0; i<ctx->nKeys; i++) {
+    if (ctx->table[i*XARRAY_TABLE_COLS + 0] == k) {
       /* found the right row */
       return 1;
     }
@@ -39,66 +59,37 @@ int XArray_hasKey(PyObject *self, char k) {
   return 0;
 }
 
-char XArray_getStart(PyObject *self, char k) {
-  int nRows, nCols, i;
-  char *array;
-
-  XArray_updateCache(self);
+size_t XArray_getStart(XArrayCtx* ctx, char k) {
+  int i;
   
-  nRows = PyArray_DIM(table, 0);
-  nCols = PyArray_DIM(table, 1);
-  array = PyArray_DATA(table);
-  
-  for (i=0; i<nRows; i++) {
-    if (array[i*nCols + 0] == k) {
+  for (i=0; i<ctx->nKeys; i++) {
+    if (ctx->table[i*XARRAY_TABLE_COLS + 0] == k) {
       /* found the right row */
-      return array[i*nCols + 1];
+      return ctx->table[i*XARRAY_TABLE_COLS + 1];
     }
   }
   PyErr_Format(PyExc_AttributeError, "XArray has no attribute '%c'", k);
   return XArray_ERROR;
 }
 
-char XArray_getLen(PyObject *self, char k) {
-  int nRows, nCols, i;
-  char *array;
+size_t XArray_getLen(XArrayCtx* ctx, char k) {
+  int i;
   
-  XArray_updateCache(self);
-      
-  nRows = PyArray_DIM(table, 0);
-  nCols = PyArray_DIM(table, 1);
-  array = PyArray_DATA(table);
-  
-  for (i=0; i<nRows; i++) {
-    if (array[i*nCols + 0] == k) {
+  for (i=0; i<ctx->nKeys; i++) {
+    if (ctx->table[i*XARRAY_TABLE_COLS + 0] == k) {
       /* found the right row */
-      return array[i*nCols + 1];
+      return ctx->table[i*XARRAY_TABLE_COLS + 1];
     }
   }
   PyErr_Format(PyExc_AttributeError, "XArray has no attribute '%c'", k);
   return XArray_ERROR;
 }
 
-double XArray_getValue(PyObject *self, int i, char key, int pos) {
-  int nCols;
-  char *array;
-  
-  XArray_updateCache(self);
-  
-  nCols = PyArray_DIM(table, 1);
-  array = PyArray_DATA(table);
-  
-  return array[nCols*i + XArray_getStart(self, key) + pos];
+void XArray_getMember(XArrayCtx* ctx, char k, XArrayMember* mem) {
+  mem->ctx = ctx;
+  mem->start = XArray_getStart(ctx, k);
 }
 
-void XArray_setValue(PyObject *self, int i, char key, int pos, double val) {
-  int nCols;
-  char *array;
-  
-  XArray_updateCache(self);
-  
-  nCols = PyArray_DIM(table, 1);
-  array = PyArray_DATA(table);
-  
-  array[nCols*i + XArray_getStart(self, key) + pos] = val;
+double* XArray_getItem(XArrayMember* mem, size_t i) {
+  return &(mem->ctx->data[mem->ctx->nCols*i + mem->start]);
 }

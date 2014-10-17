@@ -12,256 +12,71 @@
  * Update the positions of an array of fallers (periodic boundary
  * conditions).
  */
-void FallerArray_move(PyObject *self, Lattice *lat) {
-  PyObject *fallerData;
-  double *fallers;
-  int numFallers, numCols;
-  int i;
-  /* Start positions of particle data within each row of the table */
-  int aStart, rStart, sStart, vStart, fStart;
-  double hydroRadius, eta, noiseStDev;
-  int size[DQ_d], tracks;
-  
-  /* get the Lattice size */
-  size[0] = lat->nx;
-  size[1] = lat->ny;
-  size[2] = lat->nz;
+#define FUNCTION_NAME FallerArray_move
+#define BEGIN_ITER_CODE
+#define END_ITER_CODE
+#include "move_template.h"
+#undef FUNCTION_NAME
+#undef BEGIN_ITER_CODE
+#undef END_ITER_CODE
 
-  eta = lat->tau_s / 3.;
-  
-  /* abusing the name fallerData variable to store a ref to 
-   * self.hydroRadius & .noiseStDev */
-  fallerData = PyObject_GetAttrString(self, "hydroRadius");
-  hydroRadius = PyFloat_AS_DOUBLE(fallerData);
-  Py_DECREF(fallerData); /* discard the new ref gained above */
-
-  fallerData = PyObject_GetAttrString(self, "noiseStDev");
-  noiseStDev = PyFloat_AS_DOUBLE(fallerData);
-  Py_DECREF(fallerData); /* discard the new ref gained above */
-
-  fallerData = PyObject_GetAttrString(self, "tracks");
-  tracks = (fallerData == Py_True);
-  Py_DECREF(fallerData); /* discard the new ref gained above */
-
-  /* now put fallerData to its proper use */
-  fallerData = PyObject_GetAttrString(self, "data");
-  /* noting we have a new ref *
-   * and get the number of fallers */
-  numFallers = PyArray_DIM((PyArrayObject *)fallerData, 0);
-  /* and number of cols in array */
-  numCols = PyArray_DIM((PyArrayObject *)fallerData, 1);
-
-  fallers = (double *)PyArray_DATA( (PyArrayObject *)fallerData );
-  rStart = XArray_getStart(self, 'r');
-  if (tracks)
-    sStart = XArray_getStart(self, 's');
-  vStart = XArray_getStart(self, 'v');
-  fStart = XArray_getStart(self, 'F');
-  aStart = XArray_getStart(self, 'a');
-  
-#pragma omp parallel for schedule(guided)
-  for (i=0; i<numFallers; ++i) {
-    /* radius, position, velocity  & force on a particular particle */
-    double a, *r, *s, *v, *F;
-    double vinterp[DQ_d];
-    int j;
-    /* set up pointers to the correct parts of the array */
-    r = fallers + numCols*i + rStart;
-    if (tracks)
-      s = fallers + numCols*i + sStart;
-    v = fallers + numCols*i + vStart;
-    F = fallers + numCols*i + fStart;
-    a = fallers[numCols*i + aStart];
-    
-    /* interpolate the velocity to particle location */
-    utils_interp_single(lat, r, vinterp);
-    
-    /* calculate velocity vector */
-    for (j=0; j<DQ_d; ++j) {
-      
-      v[j] = vinterp[j] + /* advection */
-	F[j] * (1./a - 1./hydroRadius) / (6. * M_PI * eta) + /* sedimentation*/
-	noiseStDev*gasdev_get(lat->noise->gds); /* diffusion */
-
-      /* Calculate the new position, assuming unit timestep */
-      r[j] += v[j];
-      if (tracks)
-	s[j] += v[j];
-      
-      /*  Now check that it's not moved off the edge of the lattice */
-      /*  and wrap it round if it has. */
-      if (r[j] < 0.5) {
-	r[j] += size[j];
-      } else if (r[j] > size[j] + 0.5) {
-	r[j] -= size[j];
-      }
-      
-    }
-    
-
-  } /* i */
-  
-  /* Drop the extra reference we picked up */
-  Py_DECREF(fallerData);
-}
-
-void WalledFallerArray_move(PyObject *self, Lattice *lat) {
-  PyObject *fallerData;
-  double *fallers;
-  int numFallers, numCols;
-  int i;
-  /* and their start positions within each row of the table */
-  int aStart, rStart, sStart, vStart, fStart;
-  double hydroRadius, eta, noiseStDev;
-  int size[DQ_d], tracks;
-  
-  /* get the Lattice size */
-  size[0] = lat->nx;
-  size[1] = lat->ny;
-  size[2] = lat->nz;
-
-  eta = lat->tau_s / 3.;
-  
-  /* abusing the name fallerData variable to store a ref to 
-   * self.hydroRadius & .noiseStDev */
-  fallerData = PyObject_GetAttrString(self, "hydroRadius");
-  hydroRadius = PyFloat_AS_DOUBLE(fallerData);
-  Py_DECREF(fallerData); /* discard the new ref gained above */
-
-  fallerData = PyObject_GetAttrString(self, "noiseStDev");
-  noiseStDev = PyFloat_AS_DOUBLE(fallerData);
-  Py_DECREF(fallerData); /* discard the new ref gained above */
-
-  fallerData = PyObject_GetAttrString(self, "tracks");
-  tracks = (fallerData == Py_True);
-  Py_DECREF(fallerData); /* discard the new ref gained above */
-  
-  /* now put fallerData to its proper use */
-  fallerData = PyObject_GetAttrString(self, "data");
-  /* noting we have a new ref *
-   * and get the number of fallers */
-  numFallers = PyArray_DIM((PyArrayObject *)fallerData, 0);
-  /* and number of cols in array */
-  numCols = PyArray_DIM((PyArrayObject *)fallerData, 1);
-  
-  fallers = (double *)PyArray_DATA((PyArrayObject *)fallerData);
-  rStart = XArray_getStart(self, 'r');
-  if (tracks)
-    sStart = XArray_getStart(self, 's');
-  vStart = XArray_getStart(self, 'v');
-  fStart = XArray_getStart(self, 'F');
-  aStart = XArray_getStart(self, 'a');
-
-#pragma omp parallel for schedule(guided)
-  for (i=0; i<numFallers; ++i) {
-    /* radius, position, velocity  & force on a particular particle */
-    double a, *r, *s, *v, *F;
-    double vinterp[DQ_d];
-    int j;
-    /* set up pointers to the correct parts of the array */
-    r = fallers + numCols*i + rStart;
-    if (tracks)
-      s = fallers + numCols*i + sStart;
-    v = fallers + numCols*i + vStart;
-    F = fallers + numCols*i + fStart;
-    a = fallers[numCols*i + aStart];
-    
-    /* if it's gone to the bottom already, leave it be */
-    if (r[2] < 2.)
-      continue;
-	
-    /* interpolate the velocity to particle location */
-    utils_interp_single(lat, r, vinterp);
-    
-    /* calculate velocity vector */
-    for (j=0; j<DQ_d; ++j) {
-      
-      v[j] = vinterp[j] + /* advection */
-	F[j] * (1./a - 1./hydroRadius) / (6. * M_PI * eta) + /* sedimentation*/
-	noiseStDev*gasdev_get(lat->noise->gds); /* diffusion */
-
-      /* Calculate the new position, assuming unit timestep */
-      r[j] += v[j];
-      if (tracks)
-	s[j] += v[j];
-      
-      /*  Now check that it's not moved off the edge of the lattice */
-      /*  and wrap it round if it has. */
-      if (r[j] < 0.5) {
-	r[j] += size[j];
-      } else if (r[j] > size[j] + 0.5) {
-	r[j] -= size[j];
-      }
-      
-    }
-    
-    if (r[2] < 2.) {
-      /* it has passed thru the bottom allowed position, 
-       * so set its force to zero, so it won't affect things anymore */
-      F[0] = 0.;
-      F[1] = 0.;
-      F[2] = 0.;
-    }
-    
-  } /* i */
-  
-  /* Drop the extra reference we picked up */
-  Py_DECREF(fallerData);
-}
+#define FUNCTION_NAME WalledFallerArray_move
+/* if it's gone to the bottom already, leave it be */
+#define BEGIN_ITER_CODE if (r[2] < 2.) continue;
+/* it has passed thru the bottom allowed position, 
+ * so set its force to zero, so it won't affect things anymore */
+#define END_ITER_CODE  if (r[2] < 2.) { F[0] = 0.; F[1] = 0.; F[2] = 0.; }
+#include "move_template.h"
+#undef FUNCTION_NAME
+#undef BEGIN_ITER_CODE
+#undef END_ITER_CODE
 
 void PDFallerArray_addPotentialDipoles(PyObject *self, Lattice *lat) {
-  PyObject *fallerData;
-  double *fallers;
   int nx,ny,nz;
-  int numFallers, numCols;
-
-  int i,j,k,l,n,s; /* loop indices */
-  int ind[3], size[3];
-  double x[3], delta3d;
-  /* radius, position of and force on a particular particle */
-  double a, *r, *F;
-  /* and their start positions within each row of the table */
+  int n, iPart;
+  int size[3];
+  /* start positions within each row of the table */
   int aStart, rStart, fStart;
-  double normF;
-  double source_r[3], source_strength;
   double eta = lat->tau_s / 3.;
+  /* XArray access context and member sub-arrays */
+  XArrayCtx* ctx;
+  XArrayMember aAr, rAr, fAr;
   
-  /* get the PyObj of the data array */
-  fallerData = PyObject_GetAttrString(self, "data");
-
-  /* get pointers to the data sections */
-  fallers = (double *)PyArray_DATA((PyArrayObject *)fallerData);
-
   /* get the Lattice size */
   size[0] = nx = lat->nx;
   size[1] = ny = lat->ny;
   size[2] = nz = lat->nz;
-  
-  /* and number of fallers */
-  numFallers = PyArray_DIM((PyArrayObject *)fallerData, 0);
-  /* and number of cols in array */
-  numCols = PyArray_DIM((PyArrayObject *)fallerData, 1);
-  
-  rStart = XArray_getStart(self, 'r');
-  fStart = XArray_getStart(self, 'F');
-  aStart = XArray_getStart(self, 'a');
+    
+  ctx = XArray_initCtx(self);
+  XArray_getMember(ctx, 'r', &rAr);
+  XArray_getMember(ctx, 'F', &fAr);
+  XArray_getMember(ctx, 'a', &aAr);
 
 #define mod(a, n)  ((a)<1 ? (a)+n : ((a)>n ? (a)-n: (a)))
  
 #pragma omp parallel for schedule(guided)
-  for (n=0; n<numFallers; ++n) {
+  for (iPart=0; iPart<ctx->nRows; ++iPart) {
+    int i,j,k,l,n,s; /* loop indices */
+    int ind[3], size[3];
+    double x[3], delta3d;
+    /* radius, position of and force on a particular particle */
+    double a, *r, *F;
+    double normF;
+    double source_r[3], source_strength;
     /* set up pointers to the correct parts of the array */
-    r = fallers + numCols*n + rStart;
-    F = fallers + numCols*n + fStart;
-    a = fallers[numCols*n + aStart];
+    r = XArray_getItem(&rAr, i);
+    F = XArray_getItem(&fAr, i);
+    a = *XArray_getItem(&aAr, i);
+
     normF = sqrt(F[0]*F[0] + F[1]*F[1] + F[2]*F[2]);
 
     /* skip any unforced particle */
     if (normF == 0.)
       continue;
 
+    /* For each end */
     for (s=-1; s<2; s+=2) {
-      
+      /* For each dimension */
       for  (l=0; l<3; l++) {
 	source_r[l]  = r[l] + s*0.5 * a * F[l] / normF;
 	if (source_r[l] < 0.5) {
@@ -302,5 +117,5 @@ void PDFallerArray_addPotentialDipoles(PyObject *self, Lattice *lat) {
     } /* sources, s */
     
   } /* fallers */
-  
+  XArray_delCtx(ctx);
 }

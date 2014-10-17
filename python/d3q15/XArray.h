@@ -5,10 +5,27 @@
 
 #include <Python.h>
 
-int XArray_hasKey(PyObject *self, char k);
-char XArray_getStart(PyObject *self, char k);
-char XArray_getLen(PyObject *self, char k);
-double XArray_getValue(PyObject *self, int i, char key, int pos);
-void XArray_setValue(PyObject *self, int i, char key, int pos, double val);
+typedef struct XArrayCtx {
+  PyObject* self;
+  size_t nKeys, nCols, nRows;
+  char* table;
+  double* data;
+} XArrayCtx;
+
+typedef struct XArrayMember {
+  XArrayCtx* ctx;
+  size_t start;
+} XArrayMember;
+
+XArrayCtx* XArray_initCtx(PyObject* self);
+void XArray_delCtx(XArrayCtx* ctx);
+
+int XArray_hasKey(XArrayCtx* ctx, char k);
+size_t XArray_getStart(XArrayCtx* ctx, char k);
+size_t XArray_getLen(XArrayCtx* ctx, char k);
+
+void XArray_getMember(XArrayCtx* ctx, char k, XArrayMember* mem);
+
+double* XArray_getItem(XArrayMember* mem, size_t i);
 
 #endif

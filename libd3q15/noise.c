@@ -6,15 +6,13 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "omp.h"
-
 void noise_init(Lattice *lat, long seed) {
   NoiseConfig *n = (NoiseConfig *)malloc(sizeof(NoiseConfig));
 
   double omega_s = 1.0 / (lat->tau_s + 0.5);
   double omega_b = 1.0 / (lat->tau_b + 0.5);
   
-  n->gds = gasdev_init(seed);
+  pgasdev_init(&n->gds, -1, seed);
   
   n->_var[0] = 
     sqrt(1./lat->norms[DQ_SXX]) *sqrt(2.* lat->tau_b * omega_b*omega_b);
@@ -46,7 +44,7 @@ void noise_set_temperature(NoiseConfig *noise, double temperature){
 /************************************************************/
 
 void noise_del(Lattice *lat) {
-  gasdev_del(lat->noise->gds);
+  pgasdev_del(&lat->noise->gds);
   free(lat->noise);
 }
 
@@ -63,17 +61,17 @@ void noise_add_to_modes(NoiseConfig *n, double mode[]) {
   /* density & momentum modes unchanged */
 
   /* stress mode */
-  Shat[DQ_X][DQ_X] = gasdev_get(n->gds);
-  Shat[DQ_X][DQ_Y] = gasdev_get(n->gds);
-  Shat[DQ_X][DQ_Z] = gasdev_get(n->gds);
+  Shat[DQ_X][DQ_X] = pgasdev_get(&n->gds);
+  Shat[DQ_X][DQ_Y] = pgasdev_get(&n->gds);
+  Shat[DQ_X][DQ_Z] = pgasdev_get(&n->gds);
 
   Shat[DQ_Y][DQ_X] = Shat[DQ_X][DQ_Y];
-  Shat[DQ_Y][DQ_Y] = gasdev_get(n->gds);
-  Shat[DQ_Y][DQ_Z] = gasdev_get(n->gds);
+  Shat[DQ_Y][DQ_Y] = pgasdev_get(&n->gds);
+  Shat[DQ_Y][DQ_Z] = pgasdev_get(&n->gds);
 
   Shat[DQ_Z][DQ_X] = Shat[DQ_X][DQ_Z];
   Shat[DQ_Z][DQ_Y] = Shat[DQ_Y][DQ_Z];
-  Shat[DQ_Z][DQ_Z] = gasdev_get(n->gds);
+  Shat[DQ_Z][DQ_Z] = pgasdev_get(&n->gds);
   
   /* compute trace & traceless */
   TrS = 0.;
@@ -103,13 +101,13 @@ void noise_add_to_modes(NoiseConfig *n, double mode[]) {
   for (a=0; a<DQ_d; a++)
     Shat[a][a] += TrS;
   
-  chi1hat      = n->var[2] * gasdev_get(n->gds);
+  chi1hat      = n->var[2] * pgasdev_get(&n->gds);
   
-  jchi1hat[0]  = n->var[3] * gasdev_get(n->gds);
-  jchi1hat[1]  = n->var[3] * gasdev_get(n->gds);
-  jchi1hat[2]  = n->var[3] * gasdev_get(n->gds);
+  jchi1hat[0]  = n->var[3] * pgasdev_get(&n->gds);
+  jchi1hat[1]  = n->var[3] * pgasdev_get(&n->gds);
+  jchi1hat[2]  = n->var[3] * pgasdev_get(&n->gds);
   
-  chi2hat      = n->var[4] * gasdev_get(n->gds);
+  chi2hat      = n->var[4] * pgasdev_get(&n->gds);
 
   mode[DQ_SXX] += Shat[DQ_X][DQ_X];
   mode[DQ_SXY] += Shat[DQ_X][DQ_Y];
@@ -145,7 +143,7 @@ void noise_calc(Lattice *lat, double fr[]) {
   double *_var = n->var; /* pointer to variances */
 
   for (i = 0; i < 11; i++) {
-    rhat[i] = gasdev_get(n->gds);
+    rhat[i] = pgasdev_get(&n->gds);
   }
 
   sigma[0][0] = _var[0]*rhat[0];
@@ -192,113 +190,7 @@ void noise_calc(Lattice *lat, double fr[]) {
 }
 
 /************************************************************/
-#define IA 16807
-#define IM 2147483647
-#define AM (1.0/IM)
-#define IQ 127773
-#define IR 2836
-#define NTAB 32
-#define NDIV (1+(IM-1)/NTAB)
-#define EPS 1.2e-7
-#define RNMX (1.0-EPS)
 
-typedef struct mt_state {
-  long idum;
-  long iy;
-  long iv[NTAB];
-} mt_state;
 
-mt_state* mt_init(long idum) {
-  mt_state* st = (mt_state*)malloc(sizeof(mt_state));
-  
-  int j;
-  long k;
-  if (-idum < 1)
-    idum=1;
-  else
-    idum = -idum;
-
-  for (j=NTAB+7; j>=0; j--) {
-    k= idum/IQ;
-    idum = IA*(idum - k*IQ)-IR*k;
-    if (idum < 0)
-      idum += IM;
-    if (j < NTAB)
-      st->iv[j] = idum;
-  }
-  st->iy=st->iv[0];
-  st->idum = idum;
-  return st;
-}
-
-void mt_del(mt_state* st) {
-  free(st);
-}
-
-double mt_get(mt_state* st) {
-    int j;
-    long k;
-    double temp;
-
-    if (st->idum <= 0 || !st->iy) {
-      printf("Twister error\n");
-      exit(1);
-    }
-    k=(st->idum)/IQ;
-    st->idum=IA*(st->idum-k*IQ)-IR*k;
-    if (st->idum < 0) st->idum += IM;
-    j=st->iy/NDIV;
-    st->iy=st->iv[j];
-    st->iv[j] = st->idum;
-    temp=AM*st->iy;
-    if (temp > RNMX) return RNMX;
-    else return temp;
-}
-
-struct gasdev_state {
-  int iset;
-  double gset;
-  mt_state* mt_st;
-};
-
-gasdev_state* gasdev_init(long idum) {
-    int n = omp_get_max_threads();
-    gasdev_state* gds = (gasdev_state*)malloc(n * sizeof(gasdev_state));
-    for (int i=0; i<n; i++) {
-      gds[i].iset = 0;
-      gds[i].mt_st = mt_init(idum - i);
-    }
-    return gds;
-}
-
-void gasdev_del(gasdev_state* gds) {
-  int n = omp_get_max_threads();
-  for (int i=0; i<n; i++) {
-    mt_del(gds[i].mt_st);
-  }
-  free(gds);
-}
-
-double gasdev_get(gasdev_state* gds)
-     /* from Numerical recipes */
-{
-    int i = omp_get_thread_num();
-    double fac,rsq,v1,v2;
-
-    if (gds[i].iset == 0) {
-        do {
-            v1=2.0*mt_get(gds[i].mt_st)-1.0;
-            v2=2.0*mt_get(gds[i].mt_st)-1.0;
-            rsq=v1*v1+v2*v2;
-        } while (rsq >= 1.0 || rsq == 0.0);
-        fac=sqrt(-2.0*log(rsq)/rsq);
-        gds[i].gset=v1*fac;
-        gds[i].iset=1;
-        return (double)(v2*fac);
-    } else {
-        gds[i].iset=0;
-        return (double)gds[i].gset;
-    }
-}
 
 #endif

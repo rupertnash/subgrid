@@ -5,7 +5,7 @@ AR = ar rc
 
 LIB = libd3q15.a
 
-libobjs = d3q15.o checks.o noise.o \
+libobjs = d3q15.o checks.o prng.o noise.o \
 	init_uniform.o init_point.o \
 	bc_pbc.o bc_noslip.o bc_freeslip.o bc_wall.o \
 	force_none.o force_const.o

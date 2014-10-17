@@ -158,7 +158,7 @@ class LatticeWithStuff(Lattice):
         
         """
         Lattice.step(self)
-        assert N.alltrue(N.isfinite(self.f_current.flat))
+        assert N.alltrue(N.isfinite(self.f.flat))
         self.updateHydroVars()
         assert N.alltrue(N.isfinite(self.u.flat))
 
@@ -220,31 +220,21 @@ class LatticeWithStuff(Lattice):
     def __getstate__(self):
         """Enables pickling - creates the actual data to be
         serialized."""
-	picdict = Lattice.__getstate__(self)
-	# Remove rho, u and force field since they can be recalculated
-	# from other data.
-	del picdict['fields']['rho']
-	del picdict['fields']['u']
-	del picdict['fields']['force']
-	picdict['things'] = self.things
+        picdict = Lattice.__getstate__(self)
+        picdict['things'] = self.things
         picdict['warmup'] = self.warmup
-	return picdict
+        return picdict
     
     def __setstate__(self, picdict):
         """Restores from the pickled data."""
-	try:
-	    # Since we've removed rho, u & force from the 'fields' 
-	    # sub-dict, KeyError will occur. Ignore it
-	    Lattice.__setstate__(self, picdict)
-	except KeyError:
-	    pass
-	
-	self.things = picdict['things']
+        Lattice.__setstate__(self, picdict)
+        
+        self.things = picdict['things']
         # initially False to ensure the force is updated onece
         self.warmup = False
-	# But now need to reconstruct the fields
-	self.updateForce()
-	self.updateHydroVars()
+        # But now need to reconstruct the fields
+        self.updateForce()
+        self.updateHydroVars()
         # Now set warmup flag to correct state.
         try:
             self.warmup = picdict['warmup']

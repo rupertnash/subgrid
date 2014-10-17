@@ -73,7 +73,7 @@ void FUNCTION_NAME(PyObject *self, Lattice *lat) {
       
       v[j] = vinterp[j] + /* advection */
 	F[j] * (1./a - 1./hydroRadius) / (6. * M_PI * eta) + /* sedimentation*/
-	noiseStDev*gasdev_get(lat->noise->gds); /* diffusion */
+	noiseStDev*pgasdev_get(&lat->noise->gds); /* diffusion */
 
       /* Calculate the new position, assuming unit timestep */
       r[j] += v[j];

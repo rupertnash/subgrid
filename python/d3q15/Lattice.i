@@ -283,7 +283,7 @@ EXC_CHECK(force_set)
   const double totalMass;
   PyObject *totalMomentum;
 
-  PyObject *f_current_get() {
+  PyObject *f_get() {
     /* Return a NumPy array Object whose data section points
      * to the Lattice's distribution data.
      */
@@ -304,7 +304,7 @@ EXC_CHECK(force_set)
     return resultobj;
   }
   
-  void f_current_set(PyObject *obj) {
+  void f_set(PyObject *obj) {
     PyArrayObject *array = NULL;
     double *data = NULL;
     int i;
@@ -349,75 +349,6 @@ EXC_CHECK(force_set)
     data = (double *)PyArray_DATA(array);
     for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2)*DQ_q; i++)
       $self->f_current_ptr[i] = data[i];
-    
-  }
-  
-  PyObject *f_new_get() {
-    /* Return a NumPy array Object whose data section points
-     * to the Lattice's distribution data.
-     */
-    PyObject *resultobj = NULL;
-    int n_dims = DQ_d + 1;
-    npy_intp dims[n_dims];
-    
-    dims[0] = $self->nx + 2;
-    dims[1] = $self->ny + 2;
-    dims[2] = $self->nz + 2;
-    dims[3] = DQ_q;
-    
-    resultobj = PyArray_SimpleNewFromData(n_dims,
-					  dims,
-					  NPY_DOUBLE,
-					  (void *)$self->f_new_ptr);
-    
-    return resultobj;
-  }
-  
-  void f_new_set(PyObject *obj) {
-    PyArrayObject *array = NULL;
-    double *data = NULL;
-    int i;
-    
-    /* check it's a numpy array */  
-    if (!PyArray_Check(obj)) {
-      PyErr_Format(PyExc_ValueError, "must set to a numpy array");
-      return;
-    }
-    
-    array = (PyArrayObject *)obj;
-    /* check it's an array of doubles */
-    if (PyArray_DTYPE(array)->type_num != NPY_DOUBLE) {
-      PyErr_Format(PyExc_ValueError, "array must be of type Float (a C double)");
-      return;
-    }
-    
-    /* check it has the right no. dimensions */
-    if (PyArray_NDIM(array) != DQ_d+1) {
-      PyErr_Format(PyExc_ValueError, "array must be %d-dimensional (is %d)", DQ_d+1, PyArray_NDIM(array));
-      return;
-    }
-    
-    /* check the dimensions match */
-    npy_intp *dims = PyArray_DIMS(array);
-    if (dims[0] != $self->_x_ar_size || 
-        dims[1] != $self->_y_ar_size ||
-        dims[2] != $self->_z_ar_size ||
-        dims[3] != DQ_q) {
-      PyErr_Format(PyExc_ValueError,
-		   "array must sized %d x %d x %d x %d (is %" NPY_INTP_FMT 
-		   " x %" NPY_INTP_FMT
-		   " x %" NPY_INTP_FMT
-		   " x %" NPY_INTP_FMT ")",
-		   $self->_x_ar_size,$self->_y_ar_size,$self->_z_ar_size,DQ_q,
-		   dims[0], dims[1],
-		   dims[2], dims[3]);
-      return;
-    }
-    
-    /* copy */
-    data = (double *)PyArray_DATA(array);
-    for (i=0; i<($self->nx+2)*($self->ny+2)*($self->nz+2)*DQ_q; i++)
-      $self->f_new_ptr[i] = data[i];
     
   }
   
@@ -637,13 +568,9 @@ EXC_CHECK(force_set)
  * setters to implement properties for the distributions, rho, u & force
  */
 %pythoncode %{
-    __swig_setmethods__["f_current"] = _d3q15.Lattice_f_current_set
-    __swig_getmethods__["f_current"] = _d3q15.Lattice_f_current_get
-    if _newclass:f_current = _swig_property(_d3q15.Lattice_f_current_get, _d3q15.Lattice_f_current_set)
-    
-    __swig_setmethods__["f_new"] = _d3q15.Lattice_f_current_set
-    __swig_getmethods__["f_new"] = _d3q15.Lattice_f_current_get
-    if _newclass:f_new = _swig_property(_d3q15.Lattice_f_new_get, _d3q15.Lattice_f_new_set)
+    __swig_setmethods__["f"] = _d3q15.Lattice_f_set
+    __swig_getmethods__["f"] = _d3q15.Lattice_f_get
+    if _newclass:f = _swig_property(_d3q15.Lattice_f_get, _d3q15.Lattice_f_set)
     
     __swig_setmethods__["rho"] = _d3q15.Lattice_rho_set
     __swig_getmethods__["rho"] = _d3q15.Lattice_rho_get
@@ -669,26 +596,16 @@ EXC_CHECK(force_set)
         """Enables pickling - creates the actual data to be
         serialized."""
         picdict = {}
-        picdict['fields'] = {'f_current': self.f_current,
-			     'f_new': self.f_new,
-                             'force': self.force,
-                             'u': self.u,
-                             'rho': self.rho}
+        picdict['f'] = self.f
         picdict['time_step'] = self.time_step
-        picdict['temperature'] = self.noise.temperature
-        picdict['noiseSeed'] = self.noise.seed
+        picdict['noise'] = self.noise._serialise()
         return picdict
     
     def __setstate__(self, picdict):
         """Restores from the pickled data."""
         self.time_step = picdict['time_step']
-        self.noise.temperature = picdict['temperature']
-        self.noise.seed = picdict['noiseSeed']
-        self.f_current = picdict['fields']['f_current']
-        self.f_new = picdict['fields']['f_new']
-        self.force = picdict['fields']['force']
-        self.u = picdict['fields']['u']
-        self.rho = picdict['fields']['rho']
+        self.noise._deserialise(picdict['noise'])
+        self.f = picdict['f']
         return
 
 %}

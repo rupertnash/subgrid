@@ -25,6 +25,7 @@ cyDeltaExt = cythonize([cyDeltaExt])[0]
 
 ext_modules = [Extension('d3q15._d3q15', ['d3q15/d3q15.i',
                                           libSrcDir+'d3q15.c',
+                                          libSrcDir+'prng.c',
                                           libSrcDir+'noise.c',
                                           libSrcDir+'checks.c',
                                           libSrcDir+'bc_pbc.c',

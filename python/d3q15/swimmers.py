@@ -65,15 +65,22 @@ class SwimmerArray(d3q15.XArray):
         except KeyError:
             randSeed = 0
 
-        for flag in ['walls', 'tumbles', 'sinks', 'tracks', 'forced']:
+        # Set default options
+        self.__setattr__('swims', True)
+        self.__setattr__('tumbles', True)
+        self.__setattr__('tracks', True)
+        self.__setattr__('walls', False)
+        self.__setattr__('sinks', False)
+        self.__setattr__('forced', False)
+
+        for flag in ['swims', 'tumbles', 'tracks', 'walls', 'sinks', 'forced']:
             try:
                 if kwargs[flag]:
                     self.__setattr__(flag, True)
                 else:
                     self.__setattr__(flag, False)
             except KeyError:
-                self.__setattr__(flag, False)
-            continue
+                continue
 
         if self.tumbles:
             try: 
@@ -89,7 +96,8 @@ class SwimmerArray(d3q15.XArray):
 
         self.eta = L.tau_s / 3.
         self.num = len(r_list)
-        
+        print self.num       
+ 
         # set up fields in data array
         # we only create a table if one doesn't exist already
         # (we might be called by a subclass that created some already)
@@ -169,7 +177,13 @@ class SwimmerArray(d3q15.XArray):
         """
         v = self._interp(lattice, self.r)
         
-        rDot = self.P * self.n 
+#       rDot = self.P * self.n 
+
+        rDot = N.zeros([self.num,3])   
+        if self.swims:
+            rDot += self.P * self.n 
+            pass
+
         if self.sinks:
             rDot += self.F 
             pass

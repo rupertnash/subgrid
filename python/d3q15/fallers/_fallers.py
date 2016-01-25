@@ -26,6 +26,7 @@ class FallerArray(d3q15.XArray):
           walls: flag indicating whether the Lattice has walls
           pd: flag indicating whether to use the potential dipole term
           static: flag indicating whether to keep the particles fixed
+          tracks: flag indicating whether to track the unwrapped position
         """
         try:
             a = kwargs['a']
@@ -44,8 +45,8 @@ class FallerArray(d3q15.XArray):
             randSeed = kwargs['randSeed']
         except KeyError:
             randSeed = 0
-
-        for flag in ['walls', 'pd', 'static']:
+        
+        for flag in ['walls', 'pd', 'static', 'tracks']:
             try:
                 if kwargs[flag]:
                     self.__setattr__(flag, True)
@@ -64,6 +65,8 @@ class FallerArray(d3q15.XArray):
         if not hasattr(self, 'table'):
             self.table = {}
         self.tableAppend('r',3)
+        if self.tracks:
+            self.tableAppend('s', 3)
         self.tableAppend('v',3)
         self.tableAppend('F',3)
         self.tableAppend('a',1)
@@ -85,6 +88,8 @@ class FallerArray(d3q15.XArray):
                 raise ValueError("z-coordinate out of range due to walls")
         
         self.r = r_list
+        if self.tracks:
+            self.s = r_list
         self.v = 0.
         self.F = F
         self.a = a

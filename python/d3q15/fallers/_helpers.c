@@ -15,11 +15,11 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
   double vinterp[DQ_d];
   int i, j;
   /* radius, position, velocity  & force on a particular particle */
-  double a, *r, *v, *F;
+  double a, *r, *s, *v, *F;
   /* and their start positions within each row of the table */
-  int aStart, rStart, vStart, fStart;
+  int aStart, rStart, sStart, vStart, fStart;
   double hydroRadius, eta, noiseStDev;
-  int size[DQ_d];
+  int size[DQ_d], tracks;
   
   /* get the Lattice size */
   size[0] = lat->nx;
@@ -38,6 +38,10 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
   noiseStDev = PyFloat_AS_DOUBLE(fallerData);
   Py_DECREF(fallerData); /* discard the new ref gained above */
 
+  fallerData = PyObject_GetAttrString(self, "tracks");
+  tracks = (fallerData == Py_True);
+  Py_DECREF(fallerData); /* discard the new ref gained above */
+
   /* now put fallerData to its proper use */
   fallerData = PyObject_GetAttrString(self, "data");
   /* noting we have a new ref *
@@ -48,6 +52,8 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
 
   fallers = (double *)PyArray_DATA( (PyArrayObject *)fallerData );
   rStart = XArray_getStart(self, 'r');
+  if (tracks)
+    sStart = XArray_getStart(self, 's');
   vStart = XArray_getStart(self, 'v');
   fStart = XArray_getStart(self, 'F');
   aStart = XArray_getStart(self, 'a');
@@ -55,6 +61,8 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
   for (i=0; i<numFallers; ++i) {
     /* set up pointers to the correct parts of the array */
     r = fallers + numCols*i + rStart;
+    if (tracks)
+      s = fallers + numCols*i + sStart;
     v = fallers + numCols*i + vStart;
     F = fallers + numCols*i + fStart;
     a = fallers[numCols*i + aStart];
@@ -71,6 +79,8 @@ void FallerArray_move(PyObject *self, Lattice *lat) {
 
       /* Calculate the new position, assuming unit timestep */
       r[j] += v[j];
+      if (tracks)
+	s[j] += v[j];
       
       /*  Now check that it's not moved off the edge of the lattice */
       /*  and wrap it round if it has. */
@@ -96,11 +106,11 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
   double vinterp[DQ_d];
   int i, j;
   /* radius, position, velocity  & force on a particular particle */
-  double a, *r, *v, *F;
+  double a, *r, *s, *v, *F;
   /* and their start positions within each row of the table */
-  int aStart, rStart, vStart, fStart;
+  int aStart, rStart, sStart, vStart, fStart;
   double hydroRadius, eta, noiseStDev;
-  int size[DQ_d];
+  int size[DQ_d], tracks;
   
   /* get the Lattice size */
   size[0] = lat->nx;
@@ -119,6 +129,10 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
   noiseStDev = PyFloat_AS_DOUBLE(fallerData);
   Py_DECREF(fallerData); /* discard the new ref gained above */
 
+  fallerData = PyObject_GetAttrString(self, "tracks");
+  tracks = (fallerData == Py_True);
+  Py_DECREF(fallerData); /* discard the new ref gained above */
+  
   /* now put fallerData to its proper use */
   fallerData = PyObject_GetAttrString(self, "data");
   /* noting we have a new ref *
@@ -129,6 +143,8 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
   
   fallers = (double *)PyArray_DATA((PyArrayObject *)fallerData);
   rStart = XArray_getStart(self, 'r');
+  if (tracks)
+    sStart = XArray_getStart(self, 's');
   vStart = XArray_getStart(self, 'v');
   fStart = XArray_getStart(self, 'F');
   aStart = XArray_getStart(self, 'a');
@@ -136,6 +152,8 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
   for (i=0; i<numFallers; ++i) {
     /* set up pointers to the correct parts of the array */
     r = fallers + numCols*i + rStart;
+    if (tracks)
+      s = fallers + numCols*i + sStart;
     v = fallers + numCols*i + vStart;
     F = fallers + numCols*i + fStart;
     a = fallers[numCols*i + aStart];
@@ -156,6 +174,8 @@ void WalledFallerArray_move(PyObject *self, Lattice *lat) {
 
       /* Calculate the new position, assuming unit timestep */
       r[j] += v[j];
+      if (tracks)
+	s[j] += v[j];
       
       /*  Now check that it's not moved off the edge of the lattice */
       /*  and wrap it round if it has. */

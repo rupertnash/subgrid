@@ -175,15 +175,10 @@ class SwimmerArray(d3q15.XArray):
         where v(R) is the interpolated velocity at the position of the
         swimmer, a is the radius and n_ is the orientation.
         """
-        v = self._interp(lattice, self.r)
-        
-#       rDot = self.P * self.n 
-
         rDot = N.zeros([self.num,3])   
         if self.swims:
             rDot += self.P * self.n 
             pass
-
         if self.sinks:
             rDot += self.F 
             pass
@@ -192,8 +187,9 @@ class SwimmerArray(d3q15.XArray):
             pass
         
         h = self.hydroRadius
-
         rDot *= (1./self.a - 1./h) / (6. * N.pi * self.eta)
+
+        v = self._interp(lattice, self.r)
         rDot += v
         
         # rPlus = self.r

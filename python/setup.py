@@ -5,6 +5,7 @@ from distutils.core import setup, Extension
 import distutils.sysconfig
 from Cython.Build import cythonize
 import numpy
+import numpy.distutils.intelccompiler
 
 numpyIncludeDir = numpy.get_include()
 

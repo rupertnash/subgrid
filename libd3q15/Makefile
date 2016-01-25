@@ -15,6 +15,9 @@ libobjs = d3q15.o checks.o noise.o \
 
 headers = d3q15.h Lattice.h noise.h eigenvectors.h
 
+localconfig = $(wildcard config.mk)
+include $(localconfig)
+
 $(LIB) : $(libobjs)
 	$(AR) $@ $^
 	ranlib $@

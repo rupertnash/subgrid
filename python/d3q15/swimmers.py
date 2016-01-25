@@ -67,13 +67,15 @@ class SwimmerArray(d3q15.XArray):
 
         # Set default options
         self.__setattr__('swims', True)
+        self.__setattr__('advects', True)
+        self.__setattr__('rotates', True)
         self.__setattr__('tumbles', True)
         self.__setattr__('tracks', True)
         self.__setattr__('walls', False)
         self.__setattr__('sinks', False)
         self.__setattr__('forced', False)
 
-        for flag in ['swims', 'tumbles', 'tracks', 'walls', 'sinks', 'forced']:
+        for flag in ['swims', 'advects', 'rotates', 'tumbles', 'tracks', 'walls', 'sinks', 'forced']:
             try:
                 if kwargs[flag]:
                     self.__setattr__(flag, True)
@@ -96,7 +98,6 @@ class SwimmerArray(d3q15.XArray):
 
         self.eta = L.tau_s / 3.
         self.num = len(r_list)
-        print self.num       
  
         # set up fields in data array
         # we only create a table if one doesn't exist already
@@ -190,16 +191,21 @@ class SwimmerArray(d3q15.XArray):
         rDot *= (1./self.a - 1./h) / (6. * N.pi * self.eta)
 
         v = self._interp(lattice, self.r)
-        rDot += v
+        if self.advects:
+            rDot += v
+            pass
         
         # rPlus = self.r
-        rMinus= self.r - self.n * self.l
-        # from above, v = v(rPlus)
-        nDot = v - self._interp(lattice, rMinus)
-        # now nDot = v(rPlus) - v(rMinus)
-        # so divide by l to get the rate
-        nDot /= self.l
-        
+        nDot = N.zeros([self.num,3])   
+        if self.rotates: 
+            rMinus = self.r - self.n * self.l
+            # from above, v = v(rPlus)
+            nDot += v - self._interp(lattice, rMinus)
+            # now nDot = v(rPlus) - v(rMinus)
+            # so divide by l to get the rate
+            nDot /= self.l
+            pass
+
         self.applyMove(lattice, rDot)
         self.applyTurn(lattice, nDot)
         

@@ -268,7 +268,7 @@ void collide (Lattice *lat) {
 	/* relax the trace */
 	TrS -= omega_b*(TrS - site.rho[0]*usq);
 	/* Add forcing part to trace */
-	TrS += 2.*omega_b*tau_b * uDOTf;
+	TrS += 2.*omega_b*tau_b * uDOTf / site.rho[0];
 	
 	/* and the traceless part */
 	for (a=0; a<DQ_d; a++) {
@@ -277,7 +277,7 @@ void collide (Lattice *lat) {
 				site.rho[0]*(site.u[a]*site.u[b] -usq*delta[a][b]));
 	    
 	    /* including traceless force */
-	    S[a][b] += 2.*omega_s*tau_s * (site.u[a]*site.force[b] + site.force[a]*site.u[b] - 2. * uDOTf * delta[a][b]);
+	    S[a][b] += 2.*omega_s*tau_s * (site.u[a]*site.force[b] + site.force[a]*site.u[b] - 2. * uDOTf * delta[a][b]) / site.rho[0];
 	  }
 	  /* add the trace back on */
 	  S[a][a] += TrS / DQ_d;

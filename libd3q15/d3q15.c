@@ -180,136 +180,64 @@ void propagate (Lattice *lat) {
 
 /************************************************************/
 
+void calc_hydro_site(Site *site, Lattice* lat) {
+  int i, a;
+  double rho = 0;
+  double mom[DQ_d];
+  for (a=0; a<DQ_d; a++) {
+    mom[a] = site->force[a] / 2.0;
+  }
+  
+  for (i=0; i<DQ_q; i++) {
+    rho += site->f[i];
+    for (a=0; a<DQ_d; a++) {
+      mom[a] += site->f[i];
+    }
+  }
+  site->rho[0] = rho;
+  for (a=0; a<DQ_d; a++) {
+    site->u[a] = mom[a] / rho;
+  }
+}
+
 void collide (Lattice *lat) {
   /* loop over cells */
   int i,j,k;
   /* loop indices for dimension */
   int a,b;
   /* loop indices for velocities & modes */
-  int p,m;
+  int p;
   
-  double mode[DQ_q];
+  double fEq[DQ_q];
+  double phi[DQ_q];
   Site site;
-  /* convenience vars */
-  double S[DQ_d][DQ_d];
-  
-  double usq, TrS, uDOTf;
   
   double tau_s = lat->tau_s;
-  double tau_b = lat->tau_b;
   double omega_s = 1.0 / (tau_s + 0.5);
-  double omega_b = 1.0 / (tau_b + 0.5);
-
-  /* identity matrix */
-  double delta[DQ_d][DQ_d];
-  for (a=0; a<DQ_d; a++) {
-    for (b=0; b<DQ_d; b++) {
-      delta[a][b] = 0.;
-    }
-    delta[a][a] = 1./DQ_d;
-  }
   
   for (i=1; i<=lat->nx; i++) {
     for (j=1; j<=lat->ny; j++) {
       for (k=1; k<=lat->nz; k++) {
 	set_site(lat, site, i,j,k);
-	
-	for (m=0; m<DQ_q; m++) {
-	  /* compute the modes */
-	  mode[m] = 0.;
-	  for (p=0; p<DQ_q; p++) {
-	    mode[m] += site.f[p] * lat->mm[m][p];
-	  }
-	}
-	
-	site.rho[0] = mode[DQ_rho];
-	
-	/* Work out the site fluid velocity
-	 *   rho*u= (rho*u') + F*\Delta t /2
-	 * and the coefficient for the momentum modes.
-	 *    = (rho*u') * F* \Delta t
-	 * (and u squared)
-	 */
-	usq = 0.;
-	uDOTf = 0.;
-	for (a=0; a<DQ_d; a++) {
-	  site.u[a] = (mode[DQ_mom(a)] + 0.5*site.force[a]) / site.rho[0];
-	  mode[DQ_mom(a)] += site.force[a];
-	  usq += site.u[a]*site.u[a];
-	  uDOTf += site.u[a]*site.force[a];
-	}
-	
-	/* For unequal relax trace & traceless part at different rates.
-	 * Equilibrium trace = rho*usq */
 
-	/* First copy the stress to a convenience var */
-	S[DQ_X][DQ_X] = mode[DQ_SXX];
-	S[DQ_X][DQ_Y] = mode[DQ_SXY];
-	S[DQ_X][DQ_Z] = mode[DQ_SXZ];
-	
-	S[DQ_Y][DQ_X] = mode[DQ_SXY];
-	S[DQ_Y][DQ_Y] = mode[DQ_SYY];
-	S[DQ_Y][DQ_Z] = mode[DQ_SYZ];
-	
-	S[DQ_Z][DQ_X] = mode[DQ_SXZ];
-	S[DQ_Z][DQ_Y] = mode[DQ_SYZ];
-	S[DQ_Z][DQ_Z] = mode[DQ_SZZ];
+	calc_hydro_site(&site, lat);
+	// rho & u evaluated at t
+	calc_equil(lat, site.rho[0], site.u, fEq);
 
-	/* Form the trace part */
-	TrS = 0.;
-	for (a=0; a<DQ_d; a++) {
-	  TrS += S[a][a];
-	}
-	/* And the traceless part */
-	for (a=0; a<DQ_d; a++) {
-	  S[a][a] -= TrS/DQ_d;
-	}
-	
-	/* relax the trace */
-	TrS -= omega_b*(TrS - site.rho[0]*usq);
-	/* Add forcing part to trace */
-	TrS += 2.*omega_b*tau_b * uDOTf / site.rho[0];
-	
-	/* and the traceless part */
-	for (a=0; a<DQ_d; a++) {
-	  for (b=0; b<DQ_d; b++) {
-	    S[a][b] -= omega_s*(S[a][b] - 
-				site.rho[0]*(site.u[a]*site.u[b] -usq*delta[a][b]));
-	    
-	    /* including traceless force */
-	    S[a][b] += 2.*omega_s*tau_s * (site.u[a]*site.force[b] + site.force[a]*site.u[b] - 2. * uDOTf * delta[a][b]) / site.rho[0];
-	  }
-	  /* add the trace back on */
-	  S[a][a] += TrS / DQ_d;
-	}
-	
-	/* copy S back into modes[] */
-	mode[DQ_SXX] = S[DQ_X][DQ_X];
-	mode[DQ_SXY] = S[DQ_X][DQ_Y];
-	mode[DQ_SXZ] = S[DQ_X][DQ_Z];
-	
-	mode[DQ_SYY] = S[DQ_Y][DQ_Y];
-	mode[DQ_SYZ] = S[DQ_Y][DQ_Z];
-
-	mode[DQ_SZZ] = S[DQ_Z][DQ_Z];
-
-	/* Ghosts are relaxed to zero immediately */
-	mode[DQ_chi1] = 0.;
-	mode[DQ_jchi1X] = 0.;
-	mode[DQ_jchi1Y] = 0.;
-	mode[DQ_jchi1Z] = 0.;
-	mode[DQ_chi2] = 0.;
-	
-#ifdef DQ_NOISE
-	noise_add_to_modes(lat->noise, mode);
-#endif
-	
-	/* project back to the velocity basis */
 	for (p=0; p<DQ_q; p++) {
-	  site.f[p] = 0.;
-	  for (m=0; m<DQ_q; m++) {
-	    site.f[p] += mode[m] * lat->mmi[p][m];
+	  // forcing (Phi) term PRE Eq. (5)
+	  phi[p] = 0.0;
+	  for (a=0; a<DQ_d; a++) {
+	    phi[p] += site.force[a] * lat->xi[p][a] / lat->cs2;
+	    for(b=0; b<DQ_d; b++) {
+	      phi[p] += (site.u[a]*site.force[b] + site.u[b]*site.force[a])* lat->Q[p][a][b]
+		/ (2.0 * lat->cs2 * lat->cs2 * site.rho[0]);
+	    }
 	  }
+	  phi[p] *= lat->w[p];
+
+	  /* Collide - Eq. (17) */
+	  site.f[p] += omega_s * (tau_s * phi[p] - (site.f[p] - fEq[p]));
 	}
       }	/* k */
     } /* j */
@@ -321,32 +249,14 @@ void collide (Lattice *lat) {
 
 void calc_hydro(Lattice *lat) {
   /* Work out the hydrodynamic variables for the whole grid. */
-  int i,j,k, m,p, a;
-  double mode[DQ_q];
+  int i,j,k;
   Site site;
   
   for (i=1; i<=lat->nx; i++) {
     for (j=1; j<=lat->ny; j++) {
       for (k=1; k<=lat->nz; k++) {
 	set_site(lat, site, i,j,k);
-	
-	for (m=0; m<DQ_q; m++) {
-	  /* compute the modes */
-	  mode[m] = 0.;
-	  for (p=0; p<DQ_q; p++) {
-	    mode[m] += site.f[p] * lat->mm[m][p];
-	  }
-	}
-	
-	site.rho[0] = mode[DQ_rho];
-	
-	/* Work out the site fluid velocity
-	 *   rho*u= (rho*u') + F*\Delta t /2
-	 */
-	for (a=0; a<DQ_d; a++) {
-	  site.u[a] = (mode[DQ_mom(a)] + 0.5*site.force[a]) / site.rho[0];
-	}
-	
+	calc_hydro_site(&site, lat);
       }
     }
   }
@@ -354,57 +264,21 @@ void calc_hydro(Lattice *lat) {
 
 /************************************************************/
 
-void calc_equil(double rho, double u[], double f_eq[]) {
-  /* Works out the equilibrium distribution from the hydrodynamic
-   * variables.
-   */
-  double cs2 = 1.0 / 3.0;
-  double u2 = u[0]*u[0], v2 = u[1]*u[1], w2 = u[2]*u[2];
-  double mod_sq = (u2 + v2 + w2)/(2.0 * cs2);
-  double u_cs2 = u[0]/cs2, v_cs2 = u[1]/cs2, w_cs2 = u[2]/cs2;
-  double u2_2cs4 = u2 / (2.0 * cs2 * cs2), v2_2cs4 = v2 / (2.0 * cs2 * cs2),
-    w2_2cs4 = w2 / (2.0 * cs2 *cs2);
-  double uv_cs4 = u_cs2*v_cs2, vw_cs4 = v_cs2*w_cs2, uw_cs4 = u_cs2*w_cs2;
-  double mod_sq_2 = (u2 + v2 + w2) * (1 - cs2) / (2.0 * cs2 * cs2);
+void calc_equil(Lattice *lat, double rho, double u[], double f_eq[]) {
+  int i, a, b;
+  const double cs2 = lat->cs2;
+  
+  for (i = 0; i< DQ_q; i++) {
+    double feqi = 1.0;
+    for (a = 0; a < DQ_d; a++) {
+      feqi += u[a]*lat->xi[i][a] / cs2;
 
-  double rho_w0 = rho * 2.0/9.0,
-    rho_w1 = rho / 9.0,
-    rho_w2 = rho / 72.0;
-  
-  f_eq[0] = rho_w0 * (1.0 - mod_sq);
-  
-  f_eq[1] = rho_w1 * (1.0 - mod_sq + u_cs2 + u2_2cs4);
-  f_eq[2] = rho_w1 * (1.0 - mod_sq - u_cs2 + u2_2cs4);
-  f_eq[3] = rho_w1 * (1.0 - mod_sq + v_cs2 + v2_2cs4);
-  f_eq[4] = rho_w1 * (1.0 - mod_sq - v_cs2 + v2_2cs4);
-  f_eq[5] = rho_w1 * (1.0 - mod_sq + w_cs2 + w2_2cs4);
-  f_eq[6] = rho_w1 * (1.0 - mod_sq - w_cs2 + w2_2cs4);
-  
-
-  f_eq[7] = rho_w2 * (1.0 + u_cs2 + v_cs2 + w_cs2 +
-		      uv_cs4 + vw_cs4 + uw_cs4 + mod_sq_2);
-  
-  f_eq[8] = rho_w2 * (1.0 + u_cs2 + v_cs2 - w_cs2 +
-		      uv_cs4 - vw_cs4 - uw_cs4 + mod_sq_2);
-  
-  f_eq[9] = rho_w2 * (1.0 + u_cs2 - v_cs2 + w_cs2 -
-		      uv_cs4 - vw_cs4 + uw_cs4 + mod_sq_2);
-  
-  f_eq[10] = rho_w2 * (1.0 + u_cs2 - v_cs2 - w_cs2 -
-		      uv_cs4 + vw_cs4 - uw_cs4 + mod_sq_2);
-  
-  f_eq[11] = rho_w2 * (1.0 - u_cs2 + v_cs2 + w_cs2 -
-		      uv_cs4 + vw_cs4 - uw_cs4 + mod_sq_2);
-  
-  f_eq[12] = rho_w2 * (1.0 - u_cs2 + v_cs2 - w_cs2 -
-		      uv_cs4 - vw_cs4 + uw_cs4 + mod_sq_2);
-  
-  f_eq[13] = rho_w2 * (1.0 - u_cs2 - v_cs2 + w_cs2 +
-		      uv_cs4 - vw_cs4 - uw_cs4 + mod_sq_2);
-  
-  f_eq[14] = rho_w2 * (1.0 - u_cs2 - v_cs2 - w_cs2 +
-		      uv_cs4 + vw_cs4 + uw_cs4 + mod_sq_2);
-  
+      for (b = 0; b < DQ_d; b++) {
+	feqi += lat->Q[i][a][b] * u[a] * u[b] / (2 * cs2 * cs2);
+      }
+    }
+    f_eq[i] = rho * lat->w[i] * feqi;
+  }
 }
 
 /************************************************************/

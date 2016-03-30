@@ -42,7 +42,7 @@ void d3q15_destroy(Lattice *lat);
 void propagate(Lattice *lat);
 void collide(Lattice *lat);
 
-void calc_equil(double rho, double *u, double *f_eq);
+void calc_equil(Lattice *lat, double rho, double *u, double *f_eq);
 void calc_hydro(Lattice *lat);
 
 void calc_phi(double force[], double rho, double u[], double ans[]);

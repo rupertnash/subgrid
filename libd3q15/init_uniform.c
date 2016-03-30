@@ -19,7 +19,7 @@ void init_uniform (Lattice *lat, double rho, double u[DQ_d]) {
 	  u_prime[d] = u[d] - 0.5*DQ_force_get(lat, i,j,k,d);
 	}
 	
-	calc_equil(rho, u_prime, &DQ_f_get(lat, i,j,k,0));
+	calc_equil(lat, rho, u_prime, &DQ_f_get(lat, i,j,k,0));
       }
     }
   }

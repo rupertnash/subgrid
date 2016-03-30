@@ -14,7 +14,7 @@ void init_point (Lattice *lat, double rho, double u[DQ_d],
   for (int d=0; d<DQ_d; d++)
     u_prime[d] = u[d] - 0.5*DQ_force_get(lat, x[0],x[1],x[2],d);
   
-  calc_equil(rho_prime, u_prime, &DQ_f_get(lat, x[0],x[1],x[2],0));
+  calc_equil(lat, rho_prime, u_prime, &DQ_f_get(lat, x[0],x[1],x[2],0));
   
   // done initialising
 }

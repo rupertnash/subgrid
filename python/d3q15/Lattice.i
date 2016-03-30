@@ -318,7 +318,7 @@ EXC_CHECK(force_set)
     for (i=1; i<=$self->nx; i++)
       for (j=1; j<=$self->ny; j++)
 	for (k=1; k<=$self->nz; k++)
-	  calc_equil(DQ_rho_get($self,i,j,k), &DQ_u_get($self, i,j,k,0), &DQ_f_get($self, i,j,k,0));
+	  calc_equil($self, DQ_rho_get($self,i,j,k), &DQ_u_get($self, i,j,k,0), &DQ_f_get($self, i,j,k,0));
   }
 
   /* pseduo method wrapper */

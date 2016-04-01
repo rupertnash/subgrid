@@ -143,14 +143,14 @@ class LatticeWithStuff(Lattice):
     
     """
     def __init__(self, *args):
-	Lattice.__init__(self, *args)
-	self.things  = []
+        Lattice.__init__(self, *args)
+        self.things  = []
         # Note use of UNBOUND method so that the "self" argument isn't
         # automatically bound to the instance.
-	self.setForcePy(self.__class__.updateForce)
-	self.force[:] = 0.0
+        self.setForcePy(self.__class__.updateForce)
+        self.force[:] = 0.0
         self.warmup = False
-	return
+        return
     
     def step(self, n):
         """Steps the system forward n time steps, including updating the
@@ -166,12 +166,12 @@ class LatticeWithStuff(Lattice):
             if self.warmup:
                 continue
             
-	    for th in self.things:
-		th.move(self)
-		continue
-	    
+            for th in self.things:
+                th.move(self)
+                continue
+            
             continue
-	return
+        return
     
     def add(self, thingClass, *args, **kwargs):
         """Calls the constructor/factory function supplied, and adds
@@ -185,7 +185,7 @@ class LatticeWithStuff(Lattice):
 
         self.things.append(thing)
         thing.addForce(self)
-	return thing
+        return thing
     
     def updateForce(self):
         """A method to be called from the C code to update the
@@ -198,63 +198,63 @@ class LatticeWithStuff(Lattice):
         if self.warmup:
             return
         
-	# zero the force first then add each contribution
-	self.force[:] = 0.
+        # zero the force first then add each contribution
+        self.force[:] = 0.
 
         # The BodyForce, if present, must be done last
-	bf = None
+        bf = None
         
-	for th in self.things:
+        for th in self.things:
             if isinstance(th, BodyForce):
                 # It's the BodyForce, so store for later
                 bf = th
             else:
                 # Add the force contribution normally
                 th.addForce(self)
-	    continue
+            continue
 
         if bf is not None:
             # Add the BodyForce now
             bf.addForce(self)
             
-	return
+        return
     
 
     def __getstate__(self):
         """Enables pickling - creates the actual data to be
         serialized."""
-	picdict = Lattice.__getstate__(self)
-	# Remove rho, u and force field since they can be recalculated
-	# from other data.
-	del picdict['fields']['rho']
-	del picdict['fields']['u']
-	del picdict['fields']['force']
-	picdict['things'] = self.things
+        picdict = Lattice.__getstate__(self)
+        # Remove rho, u and force field since they can be recalculated
+        # from other data.
+        del picdict['fields']['rho']
+        del picdict['fields']['u']
+        del picdict['fields']['force']
+        picdict['things'] = self.things
         picdict['warmup'] = self.warmup
-	return picdict
+        return picdict
     
     def __setstate__(self, picdict):
         """Restores from the pickled data."""
-	try:
-	    # Since we've removed rho, u & force from the 'fields' 
-	    # sub-dict, KeyError will occur. Ignore it
-	    Lattice.__setstate__(self, picdict)
-	except KeyError:
-	    pass
-	
-	self.things = picdict['things']
+        try:
+            # Since we've removed rho, u & force from the 'fields' 
+            # sub-dict, KeyError will occur. Ignore it
+            Lattice.__setstate__(self, picdict)
+        except KeyError:
+            pass
+        
+        self.things = picdict['things']
         # initially False to ensure the force is updated onece
         self.warmup = False
-	# But now need to reconstruct the fields
-	self.updateForce()
-	self.updateHydroVars()
+        # But now need to reconstruct the fields
+        self.updateForce()
+        self.updateHydroVars()
         # Now set warmup flag to correct state.
         try:
             self.warmup = picdict['warmup']
         except KeyError:
             self.warmup = False
                 
-	return
+        return
     
     pass
 
@@ -268,10 +268,10 @@ class Thing(object):
         return
     
     def addForce(self, lattice):
-	raise NotImplementedError("Subclass must override this method!")
+        raise NotImplementedError("Subclass must override this method!")
     
     def move(self, lattice):
-	raise NotImplementedError("Subclass must override this method!")
+        raise NotImplementedError("Subclass must override this method!")
     
     pass
 
@@ -287,23 +287,23 @@ class SolidWalledLatticeWithStuff(LatticeWithStuff):
     
     """
     def __init__(self, *args):
-	LatticeWithStuff.__init__(self, *args)
-	self.initBoundaryC('noslip')
-	return
+        LatticeWithStuff.__init__(self, *args)
+        self.initBoundaryC('noslip')
+        return
     
     def add(self, thingClass, *args, **kwargs):
-	th = LatticeWithStuff.add(self, thingClass, *args, **kwargs)
+        th = LatticeWithStuff.add(self, thingClass, *args, **kwargs)
         try:
             assert th.respectsWalls() == 'z'
         except AssertionError:
             del self.things[-1]
             raise
         
-	return th
+        return th
     
     pass
 
-	
+
 class BodyForce(Thing):
     """A special Thing that ensures there is no net force on the
     LatticeWithStuff. It's special-cased by the LatticeWithStuff

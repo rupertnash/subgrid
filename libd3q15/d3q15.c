@@ -212,8 +212,8 @@ void collide (Lattice *lat) {
   double phi[DQ_q];
   Site site;
   
-  double tau_s = lat->tau_s;
-  double omega_s = 1.0 / (tau_s + 0.5);
+  const double tau_s = lat->tau_s;
+  const double omega_s = 1.0 / (tau_s + 0.5);
   
   for (i=1; i<=lat->nx; i++) {
     for (j=1; j<=lat->ny; j++) {
@@ -224,18 +224,22 @@ void collide (Lattice *lat) {
 	// rho & u evaluated at t
 	calc_equil(lat, site.rho[0], site.u, fEq);
 
+	double u_F = 0.0;
+	for (a=0; a<DQ_d; a++)
+	  u_F += site.u[a]*site.force[a];
+	
 	for (p=0; p<DQ_q; p++) {
-	  // forcing (Phi) term PRE Eq. (5)
-	  phi[p] = 0.0;
+	  double u_ep = 0.0;
+	  double F_ep = 0.0;
 	  for (a=0; a<DQ_d; a++) {
-	    phi[p] += site.force[a] * lat->xi[p][a] / lat->cs2;
-	    for(b=0; b<DQ_d; b++) {
-	      phi[p] += (site.u[a]*site.force[b] + site.u[b]*site.force[a])* lat->Q[p][a][b]
-		/ (2.0 * lat->cs2 * lat->cs2 * site.rho[0]);
-	    }
+	    u_ep += site.u[a] * lat->xi[p][a];
+	    F_ep += site.force[a] * lat->xi[p][a];
 	  }
-	  phi[p] *= lat->w[p];
-
+	  
+	  phi[p] = lat->w[p] * ((F_ei - u_ei) / lat->cs2 +
+				(u_ei * u_F) / (lat->cs2 * lat->cs2));
+	  
+	  
 	  /* Collide - Eq. (17) */
 	  site.f[p] += omega_s * (tau_s * phi[p] - (site.f[p] - fEq[p]));
 	}

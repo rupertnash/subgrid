@@ -204,7 +204,7 @@ void collide (Lattice *lat) {
   /* loop over cells */
   int i,j,k;
   /* loop indices for dimension */
-  int a,b;
+  int a;
   /* loop indices for velocities & modes */
   int p;
   
@@ -236,8 +236,8 @@ void collide (Lattice *lat) {
 	    F_ep += site.force[a] * lat->xi[p][a];
 	  }
 	  
-	  phi[p] = lat->w[p] * ((F_ei - u_ei) / lat->cs2 +
-				(u_ei * u_F) / (lat->cs2 * lat->cs2));
+	  phi[p] = lat->w[p] * ((F_ep - u_ep) / lat->cs2 +
+				(u_ep * u_F) / (lat->cs2 * lat->cs2));
 	  
 	  
 	  /* Collide - Eq. (17) */

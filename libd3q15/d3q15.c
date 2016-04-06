@@ -191,7 +191,7 @@ void calc_hydro_site(Site *site, Lattice* lat) {
   for (i=0; i<DQ_q; i++) {
     rho += site->f[i];
     for (a=0; a<DQ_d; a++) {
-      mom[a] += site->f[i];
+      mom[a] += site->f[i] * lat->xi[i][a];
     }
   }
   site->rho[0] = rho;

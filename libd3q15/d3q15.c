@@ -277,7 +277,7 @@ void collide (Lattice *lat) {
 				site.rho[0]*(site.u[a]*site.u[b] -usq*delta[a][b]));
 	    
 	    /* including traceless force */
-	    S[a][b] += 2.*omega_s*tau_s * (site.u[a]*site.force[b] + site.force[a]*site.u[b] - 2. * uDOTf * delta[a][b]);
+	    S[a][b] += omega_s*tau_s * (site.u[a]*site.force[b] + site.force[a]*site.u[b] - 2. * uDOTf * delta[a][b]);
 	  }
 	  /* add the trace back on */
 	  S[a][a] += TrS / DQ_d;
@@ -301,7 +301,7 @@ void collide (Lattice *lat) {
 	mode[DQ_chi2] = 0.;
 	
 #ifdef DQ_NOISE
-	noise_add_to_modes(lat->noise, mode);
+/*	noise_add_to_modes(lat->noise, mode); */
 #endif
 	
 	/* project back to the velocity basis */

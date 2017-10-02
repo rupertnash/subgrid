@@ -1,8 +1,8 @@
 LIBDIR = $(HOME)/lib
 INCDIR = $(HOME)/include
 
-CC = gcc
-CFLAGS = -Wall -std=c99 -g -I$(HOME)/include
+CC = icc
+CFLAGS = -Wall -O3 -std=c99 -g -I$(HOME)/include
 
 AR = ar rc
 
